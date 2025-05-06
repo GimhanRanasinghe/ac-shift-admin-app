@@ -6,6 +6,7 @@ import { ThemeProvider as CustomThemeProvider } from "@/components/theme-context
 import { DataProvider } from "@/context/data-context"
 import { FeatureFlagsProvider } from "@/context/feature-flags-context"
 import { ApiProvider } from "@/components/api-provider"
+import { AuthProvider } from "@/context/auth-context"
 import { cn } from "@/lib/utils"
 import { fontSans } from "@/lib/fonts"
 
@@ -21,11 +22,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <ApiProvider>
-            <DataProvider>
-              <FeatureFlagsProvider>
-                <CustomThemeProvider>{children}</CustomThemeProvider>
-              </FeatureFlagsProvider>
-            </DataProvider>
+            <AuthProvider>
+              <DataProvider>
+                <FeatureFlagsProvider>
+                  <CustomThemeProvider>{children}</CustomThemeProvider>
+                </FeatureFlagsProvider>
+              </DataProvider>
+            </AuthProvider>
           </ApiProvider>
         </ThemeProvider>
       </body>

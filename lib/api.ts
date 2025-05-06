@@ -12,15 +12,32 @@ const apiConfig: AxiosRequestConfig = {
 // Create an Axios instance with the configuration
 const apiClient: AxiosInstance = axios.create(apiConfig);
 
+// Token management functions
+export const getAuthToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+};
+
+export const setAuthToken = (token: string | null): void => {
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+};
+
 // Request interceptor for adding auth tokens, etc.
 apiClient.interceptors.request.use(
   (config) => {
-    // You can add authentication tokens here if needed
-    // For example:
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // Add authentication token if available
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -37,19 +54,27 @@ apiClient.interceptors.response.use(
     // Handle common errors here (e.g., 401 Unauthorized, 403 Forbidden)
     if (error.response) {
       const { status } = error.response;
-      
+
       if (status === 401) {
         // Handle unauthorized access
         console.error('Unauthorized access. Please log in again.');
-        // You could redirect to login page or refresh token
+
+        // Clear the invalid token
+        setAuthToken(null);
+
+        // Redirect to login page if in browser environment
+        if (typeof window !== 'undefined') {
+          // You can use Next.js router programmatically if needed
+          window.location.href = '/login';
+        }
       }
-      
+
       if (status === 403) {
         // Handle forbidden access
         console.error('You do not have permission to access this resource.');
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -77,19 +102,19 @@ const apiRequest = async <T>(
 
 // Utility functions for common HTTP methods
 export const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig) => 
+  get: <T>(url: string, config?: AxiosRequestConfig) =>
     apiRequest<T>('GET', url, undefined, config),
-  
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) => 
+
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiRequest<T>('POST', url, data, config),
-  
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) => 
+
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiRequest<T>('PUT', url, data, config),
-  
-  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) => 
+
+  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiRequest<T>('PATCH', url, data, config),
-  
-  delete: <T>(url: string, config?: AxiosRequestConfig) => 
+
+  delete: <T>(url: string, config?: AxiosRequestConfig) =>
     apiRequest<T>('DELETE', url, undefined, config),
 };
 

@@ -10,23 +10,28 @@ import { Label } from "@/components/ui/label"
 import { AirCanadaLogo } from "@/components/air-canada-logo"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/hooks/use-auth"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export default function Login() {
   const router = useRouter()
+  const { login, loading, error } = useAuth()
   const [email, setEmail] = useState("admin@aircanada.ca")
   const [password, setPassword] = useState("password")
   const [role, setRole] = useState("admin")
-  const [loading, setLoading] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
 
-    // Simulate login - in a real app, this would be an API call
-    setTimeout(() => {
-      setLoading(false)
-      router.push("/dashboard")
-    }, 1000)
+    try {
+      // Call the login function from our auth hook
+      await login({ email, password });
+      // The hook will handle the redirect to dashboard
+    } catch (err) {
+      // Error is handled by the hook and displayed below
+      console.error('Login failed:', err);
+    }
   }
 
   return (
@@ -42,6 +47,13 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
