@@ -1,0 +1,67 @@
+[
+  {
+    "id": "1",
+    "flight": "AC123",
+    "origin": "YYZ",
+    "destination": "YVR",
+    "scheduledDeparture": "14:30",
+    "actualDeparture": "14:45",
+    "gate": "D12",
+    "terminal": "1",
+    "aircraft": "Boeing 787-9",
+    "status": "Boarding",
+    "date": "Today"
+  },
+  {
+    "id": "2",
+    "flight": "AC456",
+    "origin": "YYZ",
+    "destination": "YUL",
+    "scheduledDeparture": "16:15",
+    "actualDeparture": "16:15",
+    "gate": "C8",
+    "terminal": "1",
+    "aircraft": "Airbus A320",
+    "status": "On Time",
+    "date": "Today"
+  },
+  {
+    "id": "3",
+    "flight": "AC789",
+    "origin": "YYZ",
+    "destination": "YYC",
+    "scheduledDeparture": "18:45",
+    "actualDeparture": "19:10",
+    "gate": "E5",
+    "terminal": "3",
+    "aircraft": "Boeing 737 MAX",
+    "status": "Delayed",
+    "date": "Today"
+  },
+  {
+    "id": "4",
+    "flight": "AC234",
+    "origin": "YYZ",
+    "destination": "YEG",
+    "scheduledDeparture": "08:15",
+    "actualDeparture": "08:15",
+    "gate": "F3",
+    "terminal": "1",
+    "aircraft": "Airbus A220-300",
+    "status": "Scheduled",
+    "date": "Tomorrow"
+  },
+  {
+    "id": "5",
+    "flight": "AC567",
+    "origin": "YYZ",
+    "destination": "YHZ",
+    "scheduledDeparture": "10:30",
+    "actualDeparture": "10:30",
+    "gate": "D5",
+    "terminal": "1",
+    "aircraft": "Airbus A321",
+    "status": "Scheduled",
+    "date": "Tomorrow"
+  }
+]

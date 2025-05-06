@@ -1,0 +1,18 @@
+[
+  { "value": "all", "label": "All Equipment" },
+  { "value": "baggage-tractor", "label": "Baggage Tractors" },
+  { "value": "belt-loader", "label": "Belt Loaders" },
+  { "value": "pushback-tractor", "label": "Pushback Tractors" },
+  { "value": "container-loader", "label": "Container Loaders" },
+  { "value": "ground-power", "label": "Ground Power Units" },
+  { "value": "lavatory", "label": "Lavatory Trucks" },
+  { "value": "water", "label": "Water Trucks" },
+  { "value": "airstart", "label": "Airstart Units" },
+  { "value": "de-icing", "label": "De-icing Trucks" },
+  { "value": "catering", "label": "Catering Trucks" },
+  { "value": "stairs", "label": "Passenger Stairs" },
+  { "value": "aircraft-tug", "label": "Aircraft Tugs" },
+  { "value": "towbar", "label": "Aircraft Towbars" },
+  { "value": "lavatory-cart", "label": "Lavatory Carts" },
+  { "value": "wheelchair", "label": "Wheelchair Lifts/Ramps" }
+]

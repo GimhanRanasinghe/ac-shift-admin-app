@@ -1,0 +1,22 @@
+{
+  "name": "John Smith",
+  "employeeId": "AC123456",
+  "airport": "YYZ",
+  "position": "Ground Service Operator",
+  "email": "john.smith@aircanada.ca",
+  "phone": "+1 (416) 555-1234",
+  "startDate": "2018-05-15",
+  "certifications": [
+    { "name": "New Hire / Station Attendant Core", "expires": "2025-12-31", "status": "active" },
+    { "name": "Container Loader Certification", "expires": "2025-06-15", "status": "active" },
+    { "name": "Lavatory Certification", "expires": "2025-08-22", "status": "active" },
+    { "name": "Towbarless Tractor Certification", "expires": "2024-05-10", "status": "warning" },
+    { "name": "Water Certification", "expires": "2025-03-18", "status": "active" },
+    { "name": "Airstart Certification", "expires": "2024-07-30", "status": "active" },
+    { "name": "De-icing Certification", "expires": "2025-01-15", "status": "active" },
+    { "name": "Catering Truck Certification", "expires": "2024-06-20", "status": "warning" },
+    { "name": "Towbar Familiarization", "expires": "2025-04-10", "status": "active" },
+    { "name": "Ramp Equipment Familiarization", "expires": "2025-02-28", "status": "active" },
+    { "name": "Wide Body Push Certification", "expires": "2024-08-15", "status": "active" }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "BTG-1045",
+    "type": "Baggage Tractor",
+    "category": "Powered Equipment",
+    "code": "BTG",
+    "checkedOutTime": "10:23 AM",
+    "returnTime": "6:00 PM",
+    "status": "Active"
+  },
+  {
+    "id": "BLW-0873",
+    "type": "Belt Loader",
+    "category": "Powered Equipment",
+    "code": "BLW",
+    "checkedOutTime": "Tomorrow, 9:00 AM",
+    "returnTime": "Tomorrow, 2:00 PM",
+    "status": "Reserved"
+  }
+]

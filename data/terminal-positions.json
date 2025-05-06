@@ -1,0 +1,6 @@
+[
+  { "name": "Terminal 1", "x": 0.5, "y": 0.3 },
+  { "name": "Terminal 3", "x": 0.7, "y": 0.6 },
+  { "name": "Cargo Area", "x": 0.2, "y": 0.7 },
+  { "name": "Maintenance", "x": 0.3, "y": 0.2 }
+]

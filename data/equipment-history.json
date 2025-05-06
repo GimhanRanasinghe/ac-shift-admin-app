@@ -1,0 +1,29 @@
+[
+  {
+    "id": "BLW-0872",
+    "type": "Belt Loader",
+    "category": "Powered Equipment",
+    "code": "BLW",
+    "checkedOutTime": "Yesterday, 2:15 PM",
+    "returnTime": "Yesterday, 5:45 PM",
+    "status": "Returned"
+  },
+  {
+    "id": "ATF-0023",
+    "type": "Pushback Tractor",
+    "category": "Powered Equipment",
+    "code": "ATF",
+    "checkedOutTime": "Yesterday, 9:30 AM",
+    "returnTime": "Yesterday, 4:12 PM",
+    "status": "Returned"
+  },
+  {
+    "id": "GPB-0789",
+    "type": "Ground Power Unit",
+    "category": "Powered Equipment",
+    "code": "GPB",
+    "checkedOutTime": "Apr 12, 11:45 AM",
+    "returnTime": "Apr 12, 3:20 PM",
+    "status": "Returned"
+  }
+]

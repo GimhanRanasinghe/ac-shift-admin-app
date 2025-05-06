@@ -1,0 +1,11 @@
+[
+  { "value": "all", "label": "All Aircraft" },
+  { "value": "narrow", "label": "Narrow Body" },
+  { "value": "wide", "label": "Wide Body" },
+  { "value": "777", "label": "B777" },
+  { "value": "a320", "label": "A32X" },
+  { "value": "a330", "label": "A330" },
+  { "value": "a350", "label": "A350" },
+  { "value": "737", "label": "B737" },
+  { "value": "787", "label": "B787" }
+]
