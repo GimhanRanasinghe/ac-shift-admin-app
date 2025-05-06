@@ -3,8 +3,9 @@
 import { DesktopLayout } from "@/components/desktop-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, SettingsIcon, Bell } from "lucide-react"
+import { Users, SettingsIcon, Bell, Globe } from "lucide-react"
 import { FeatureFlagsSettings } from "@/components/feature-flags-settings"
+import { ApiSettings } from "@/components/settings/api-settings"
 
 export default function Settings() {
   return (
@@ -13,6 +14,9 @@ export default function Settings() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         </div>
+
+        {/* API Settings Section */}
+        <ApiSettings />
 
         {/* Feature Flags Section */}
         <FeatureFlagsSettings />
@@ -40,6 +44,12 @@ export default function Settings() {
                 <a href="/settings/notifications">
                   <Bell className="h-8 w-8 mb-2" />
                   <span>Notifications</span>
+                </a>
+              </Button>
+              <Button variant="outline" className="h-24 flex flex-col items-center justify-center" asChild>
+                <a href="/settings/api">
+                  <Globe className="h-8 w-8 mb-2" />
+                  <span>API Configuration</span>
                 </a>
               </Button>
             </div>

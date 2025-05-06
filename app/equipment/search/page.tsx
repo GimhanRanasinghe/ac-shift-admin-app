@@ -7,6 +7,7 @@ import { SearchHeader } from "@/components/equipment-search/search-header"
 import { SearchFilters } from "@/components/equipment-search/search-filters"
 import { ViewToggle } from "@/components/equipment-search/view-toggle"
 import { SearchResults } from "@/components/equipment-search/search-results"
+import { ApiEquipmentSearch } from "@/components/equipment-search/api-equipment-search"
 
 // Import data
 import userData from "@/data/user.json"
@@ -129,6 +130,12 @@ export default function EquipmentSearch() {
             hasCertification={hasCertification}
             locateId={locateId}
           />
+
+          {/* API Example - This demonstrates using the global API configuration */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">API Integration Example</h2>
+            <ApiEquipmentSearch />
+          </div>
         </div>
       </div>
     </AppLayout>
