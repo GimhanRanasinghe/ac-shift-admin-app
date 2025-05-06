@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -52,6 +53,7 @@ interface DesktopLayoutProps {
 
 export function DesktopLayout({ children }: DesktopLayoutProps) {
   const pathname = usePathname()
+  const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -186,10 +188,13 @@ export function DesktopLayout({ children }: DesktopLayoutProps) {
                   <AvatarImage src="/profile-photo.png" alt="Admin User" />
                   <AvatarFallback>AU</AvatarFallback>
                 </Avatar>
+                {user && (
                 <div className="ml-2">
-                  <p className="text-sm font-medium">Admin User</p>
-                  <p className="text-xs text-muted-foreground">Administrator</p>
-                </div>
+                <p className="text-sm font-medium">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.role}</p>
+              </div>
+              )}
+                
               </div>
               <Button variant="ghost" size="icon">
                 <LogOut className="h-4 w-4" />
@@ -229,10 +234,12 @@ export function DesktopLayout({ children }: DesktopLayoutProps) {
                         <AvatarImage src="/profile-photo.png" alt="Admin User" />
                         <AvatarFallback>AU</AvatarFallback>
                       </Avatar>
-                      <div className="hidden text-left md:block">
-                        <p className="text-sm font-medium">Admin User</p>
-                        <p className="text-xs text-muted-foreground">admin@aircanada.ca</p>
+                      {user && (
+                        <div className="ml-2">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.role}</p>
                       </div>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
