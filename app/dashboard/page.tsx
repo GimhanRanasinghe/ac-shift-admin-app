@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { DesktopLayout } from "@/components/desktop-layout"
+import { ProtectedRoute } from "@/components/protected-route"
+import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -62,23 +64,32 @@ const COLORS = ["#4ade80", "#60a5fa", "#f97316", "#f43f5e"]
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState("week")
+  const { user } = useAuth()
 
   return (
-    <DesktopLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Clock className="mr-2 h-4 w-4" />
-              Last updated: Today, 10:30 AM
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
+    <ProtectedRoute>
+      <DesktopLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              {user && (
+                <p className="text-muted-foreground mt-1">
+                  Welcome back, {user.name}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Clock className="mr-2 h-4 w-4" />
+                Last updated: Today, 10:30 AM
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </div>
           </div>
-        </div>
 
         {/* KPI Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -296,6 +307,7 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-    </DesktopLayout>
+      </DesktopLayout>
+    </ProtectedRoute>
   )
 }

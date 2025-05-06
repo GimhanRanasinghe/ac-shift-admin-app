@@ -3,17 +3,33 @@
 import { DesktopLayout } from "@/components/desktop-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, SettingsIcon, Bell, Globe } from "lucide-react"
+import { Users, SettingsIcon, Bell, Globe, ShieldAlert } from "lucide-react"
 import { FeatureFlagsSettings } from "@/components/feature-flags-settings"
 import { ApiSettings } from "@/components/settings/api-settings"
+import { RoleProtectedRoute } from "@/components/role-protected-route"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function Settings() {
+  const { user } = useAuth();
+
   return (
-    <DesktopLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        </div>
+    <RoleProtectedRoute requiredRole={["admin", "manager"]}>
+      <DesktopLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground mt-1">
+                Admin settings panel - Access restricted to administrators and managers
+              </p>
+            </div>
+            {user && (
+              <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-md border border-green-200">
+                <ShieldAlert className="h-4 w-4" />
+                <span className="text-sm font-medium">Logged in as: {user.role}</span>
+              </div>
+            )}
+          </div>
 
         {/* API Settings Section */}
         <ApiSettings />
@@ -120,6 +136,7 @@ export default function Settings() {
           </Card>
         </div>
       </div>
-    </DesktopLayout>
+      </DesktopLayout>
+    </RoleProtectedRoute>
   )
 }
