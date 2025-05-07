@@ -476,7 +476,7 @@ export default function FleetInventory() {
                     {filteredEquipment.length > 0 ? (
                       filteredEquipment.map((equipment) => (
                         <TableRow key={equipment.id}>
-                          <TableCell className="font-medium">{equipment.id}</TableCell>
+                          <TableCell className="font-medium">{equipment.code}</TableCell>
                           <TableCell>{equipment.type}</TableCell>
                           <TableCell>{equipment.category}</TableCell>
                           <TableCell>
