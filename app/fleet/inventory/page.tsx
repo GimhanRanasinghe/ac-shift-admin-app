@@ -405,33 +405,57 @@ export default function FleetInventory() {
                   </TabsList>
                 </Tabs>
 
-                {/* Status filter indicator */}
-                {!isLoading && statusFilter !== 'all' && (
-                  <div className="mt-2 flex items-center">
-                    <div className="text-xs text-muted-foreground mr-2">Active filter:</div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        statusFilter === "available"
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : statusFilter === "in_use"
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
-                      }
-                    >
-                      Status: {statusFilter === "in_use" ? "In Use" : capitalizeFirstLetter(statusFilter)}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 ml-1"
-                        onClick={() => {
-                          setStatusFilter('all');
-                          setCurrentView('all');
-                        }}
+                {/* Active filters indicators */}
+                {!isLoading && (statusFilter !== 'all' || typeFilter !== null) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <div className="text-xs text-muted-foreground">Active filters:</div>
+
+                    {/* Status filter badge */}
+                    {statusFilter !== 'all' && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          statusFilter === "available"
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : statusFilter === "in_use"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                        }
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
+                        Status: {statusFilter === "in_use" ? "In Use" : capitalizeFirstLetter(statusFilter)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={() => {
+                            setStatusFilter('all');
+                            setCurrentView('all');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
+
+                    {/* Equipment type filter badge */}
+                    {typeFilter !== null && (
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700 border-purple-200"
+                      >
+                        Type: {equipmentTypes.find(type => type.id === typeFilter)?.name || 'Unknown'}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={() => {
+                            setTypeFilter(null);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>
@@ -564,22 +588,9 @@ export default function FleetInventory() {
                     <>
                       {/* Calculate active filters */}
                       {(() => {
-                        // Count active filters
+                        // Count active filters from dropdown only
                         let activeFilterCount = 0;
                         if (typeFilter !== null) activeFilterCount++;
-                        if (statusFilter !== 'all') activeFilterCount++;
-
-                        // Get type name for display
-                        const selectedType = typeFilter !== null
-                          ? equipmentTypes.find(type => type.id === typeFilter)?.name
-                          : null;
-
-                        // Format status for display
-                        const formattedStatus = statusFilter === 'in_use'
-                          ? 'In Use'
-                          : statusFilter !== 'all'
-                            ? capitalizeFirstLetter(statusFilter)
-                            : null;
 
                         return (
                           <>
@@ -604,57 +615,18 @@ export default function FleetInventory() {
                               <DropdownMenuContent align="end" className="w-[250px]">
                                 <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
                                 {activeFilterCount > 0 && (
-                                  <>
-                                    <div className="px-2 py-1 text-xs">
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-medium">Active Filters:</span>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 text-xs"
-                                          onClick={() => {
-                                            setTypeFilter(null);
-                                            setStatusFilter('all');
-                                            setCurrentView('all');
-                                          }}
-                                        >
-                                          Clear All
-                                        </Button>
-                                      </div>
-                                      <div className="mt-1 space-y-1">
-                                        {statusFilter !== 'all' && (
-                                          <div className="flex items-center justify-between bg-muted rounded-md px-2 py-1">
-                                            <span>Status: {formattedStatus}</span>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-5 w-5 p-0"
-                                              onClick={() => {
-                                                setStatusFilter('all');
-                                                setCurrentView('all');
-                                              }}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        )}
-                                        {typeFilter !== null && (
-                                          <div className="flex items-center justify-between bg-muted rounded-md px-2 py-1">
-                                            <span>Type: {selectedType}</span>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-5 w-5 p-0"
-                                              onClick={() => setTypeFilter(null)}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <DropdownMenuSeparator />
-                                  </>
+                                  <div className="px-2 py-1 flex justify-end">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 text-xs"
+                                      onClick={() => {
+                                        setTypeFilter(null);
+                                      }}
+                                    >
+                                      Clear Type Filter
+                                    </Button>
+                                  </div>
                                 )}
                                 <div className="p-2">
                                   <p className="mb-1 text-xs font-medium">Equipment Type</p>
@@ -695,7 +667,7 @@ export default function FleetInventory() {
                       <TableHead>Status</TableHead>
                       <TableHead>Last Maintenance</TableHead>
                       <TableHead>Next Maintenance</TableHead>
-                      <TableHead>Location</TableHead>
+                      {/* <TableHead>Location</TableHead> */}
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -725,9 +697,9 @@ export default function FleetInventory() {
                           <TableCell>
                             <div className="h-4 w-28 animate-pulse rounded bg-gray-200"></div>
                           </TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             <div className="h-8 w-8 animate-pulse rounded bg-gray-200"></div>
-                          </TableCell>
+                          </TableCell> */}
                         </TableRow>
                       ))
                     ) : displayEquipment.length > 0 ? (
@@ -752,7 +724,7 @@ export default function FleetInventory() {
                           </TableCell>
                           <TableCell>{equipment.lastMaintenance}</TableCell>
                           <TableCell>{equipment.nextMaintenance}</TableCell>
-                          <TableCell>{equipment.distance}</TableCell>
+                          {/* <TableCell>{equipment.distance}</TableCell> */}
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
