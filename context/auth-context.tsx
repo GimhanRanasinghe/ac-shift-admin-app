@@ -36,6 +36,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const mapToUser = (userData: any): User => {
+    return {
+      id: userData.id.toString(),
+      name: userData.username,
+      email: userData.email,
+      role: userData.role,
+    };
+  };
   // Load user on mount
   useEffect(() => {
     const loadUser = async () => {
@@ -43,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (authService.isAuthenticated()) {
           setLoading(true);
           const userData = await authService.getCurrentUser();
-          setUser(userData);
+          setUser(mapToUser(userData));
         }
       } catch (err) {
         console.error('Failed to load user:', err);
@@ -64,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authService.login(credentials);
       setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(response.user))
       router.push('/dashboard'); // Redirect to dashboard after login
       return response;
     } catch (err: any) {

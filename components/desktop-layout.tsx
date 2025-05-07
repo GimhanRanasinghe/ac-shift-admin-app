@@ -230,15 +230,14 @@ export function DesktopLayout({ children }: DesktopLayoutProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/profile-photo.png" alt="Admin User" />
-                        <AvatarFallback>AU</AvatarFallback>
-                      </Avatar>
                       {user && (
-                        <div className="ml-2">
-                        <p className="text-sm font-medium">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.role}</p>
-                      </div>
+                      <><Avatar className="h-8 w-8">
+                          <AvatarImage src="/profile-photo.png" alt="Admin User" />
+                          <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() || ''}</AvatarFallback>
+                        </Avatar><div className="ml-2">
+                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-xs text-muted-foreground">{user.role}</p>
+                          </div></>
                       )}
                     </Button>
                   </DropdownMenuTrigger>
