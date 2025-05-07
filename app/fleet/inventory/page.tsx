@@ -61,7 +61,7 @@ import {
 interface UiEquipment {
   id: string;
   type: string;
-  category: string;
+  class: string;
   code: string;
   status: string;
   lastMaintenance: string;
@@ -194,7 +194,7 @@ export default function FleetInventory() {
     return {
       id: item.id.toString(),
       type: item.type_name || equipmentType?.name || "Unknown Type",
-      category: item.category || (item.is_powered ? "Powered Equipment" : "Non-powered Equipment"),
+      class: item.equipment_class || (item.is_powered ? "Powered Equipment" : "Non-powered Equipment"),
       code: item.serial_number,
       status: capitalizeFirstLetter((status || 'available').replace('_', ' ')),
       lastMaintenance: formatDate(item.last_maintenance_date),
@@ -215,6 +215,35 @@ export default function FleetInventory() {
   // Helper function to capitalize first letter
   function capitalizeFirstLetter(string: string): string {
     return string.charAt(0).toUpperCase() + string.slice(1)
+  }
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    console.log(`Tab changed to: ${value}`);
+    setCurrentView(value);
+
+    // Reset to page 1 when changing tabs
+    setCurrentPage(1);
+
+    // Update status filter based on selected tab
+    switch (value) {
+      case 'all':
+        setStatusFilter('all');
+        break;
+      case 'available':
+        setStatusFilter('available');
+        break;
+      case 'in-use':
+        setStatusFilter('in-use');
+        break;
+      case 'maintenance':
+        setStatusFilter('maintenance');
+        break;
+      default:
+        setStatusFilter('all');
+    }
+
+    console.log(`Status filter updated to: ${value === 'in-use' ? 'in_use' : value}`);
   }
 
   // Reset date filter
@@ -346,7 +375,7 @@ export default function FleetInventory() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Tabs defaultValue="all" value={currentView} onValueChange={setCurrentView}>
+              <Tabs defaultValue="all" value={currentView} onValueChange={handleTabChange}>
                 <TabsList>
                   {isLoading ? (
                     // Skeleton loading for tabs
@@ -529,7 +558,7 @@ export default function FleetInventory() {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="p-2">
+                          {/* <div className="p-2">
                             <p className="mb-1 text-xs font-medium">Status</p>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                               <SelectTrigger>
@@ -538,11 +567,11 @@ export default function FleetInventory() {
                               <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>
                                 <SelectItem value="available">Available</SelectItem>
-                                <SelectItem value="in_use">In Use</SelectItem>
+                                <SelectItem value="in-use">In Use</SelectItem>
                                 <SelectItem value="maintenance">Maintenance</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </>
@@ -556,7 +585,7 @@ export default function FleetInventory() {
                     <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Category</TableHead>
+                      <TableHead>Class</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Maintenance</TableHead>
                       <TableHead>Next Maintenance</TableHead>
@@ -600,7 +629,7 @@ export default function FleetInventory() {
                         <TableRow key={equipment.id}>
                           <TableCell className="font-medium">{equipment.code}</TableCell>
                           <TableCell>{equipment.type}</TableCell>
-                          <TableCell>{equipment.category}</TableCell>
+                          <TableCell>{equipment.class}</TableCell>
                           <TableCell>
                             <Badge
                               variant="outline"
