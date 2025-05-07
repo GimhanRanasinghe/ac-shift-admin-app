@@ -268,11 +268,11 @@ export default function FleetInventory() {
           <CardHeader className="pb-3">
             <CardTitle>Equipment Inventory</CardTitle>
             <CardDescription>Manage and monitor all ground service equipment in the fleet</CardDescription>
-            {loading && <div className="mt-2 text-sm text-muted-foreground">Loading equipment data...</div>}
+            {/* {loading && <div className="mt-2 text-sm text-muted-foreground">Loading equipment data...</div>}
             {error && <div className="mt-2 text-sm text-red-500">Error loading equipment data. Using mock data instead.</div>}
             {apiEquipment && apiEquipment.length > 0 && (
               <div className="mt-2 text-sm text-green-500">Loaded {apiEquipment.length} equipment items from API</div>
-            )}
+            )} */}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
