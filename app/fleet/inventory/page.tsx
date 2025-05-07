@@ -375,34 +375,66 @@ export default function FleetInventory() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Tabs defaultValue="all" value={currentView} onValueChange={handleTabChange}>
-                <TabsList>
-                  {isLoading ? (
-                    // Skeleton loading for tabs
-                    <>
-                      <TabsTrigger value="all" disabled>
-                        All Equipment (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
-                      </TabsTrigger>
-                      <TabsTrigger value="available" disabled>
-                        Available (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
-                      </TabsTrigger>
-                      <TabsTrigger value="in-use" disabled>
-                        In Use (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
-                      </TabsTrigger>
-                      <TabsTrigger value="maintenance" disabled>
-                        Maintenance (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
-                      </TabsTrigger>
-                    </>
-                  ) : (
-                    <>
-                      <TabsTrigger value="all">All Equipment ({counts?.total || 0})</TabsTrigger>
-                      <TabsTrigger value="available">Available ({counts?.available || 0})</TabsTrigger>
-                      <TabsTrigger value="in-use">In Use ({counts?.in_use || 0})</TabsTrigger>
-                      <TabsTrigger value="maintenance">Maintenance ({counts?.maintenance || 0})</TabsTrigger>
-                    </>
-                  )}
-                </TabsList>
-              </Tabs>
+              <div>
+                <Tabs defaultValue="all" value={currentView} onValueChange={handleTabChange}>
+                  <TabsList>
+                    {isLoading ? (
+                      // Skeleton loading for tabs
+                      <>
+                        <TabsTrigger value="all" disabled>
+                          All Equipment (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="available" disabled>
+                          Available (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="in-use" disabled>
+                          In Use (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="maintenance" disabled>
+                          Maintenance (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                      </>
+                    ) : (
+                      <>
+                        <TabsTrigger value="all">All Equipment ({counts?.total || 0})</TabsTrigger>
+                        <TabsTrigger value="available">Available ({counts?.available || 0})</TabsTrigger>
+                        <TabsTrigger value="in-use">In Use ({counts?.in_use || 0})</TabsTrigger>
+                        <TabsTrigger value="maintenance">Maintenance ({counts?.maintenance || 0})</TabsTrigger>
+                      </>
+                    )}
+                  </TabsList>
+                </Tabs>
+
+                {/* Status filter indicator */}
+                {!isLoading && statusFilter !== 'all' && (
+                  <div className="mt-2 flex items-center">
+                    <div className="text-xs text-muted-foreground mr-2">Active filter:</div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        statusFilter === "available"
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : statusFilter === "in_use"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                      }
+                    >
+                      Status: {statusFilter === "in_use" ? "In Use" : capitalizeFirstLetter(statusFilter)}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 ml-1"
+                        onClick={() => {
+                          setStatusFilter('all');
+                          setCurrentView('all');
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  </div>
+                )}
+              </div>
 
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
@@ -530,50 +562,124 @@ export default function FleetInventory() {
 
                   {advancedFiltersEnabled && (
                     <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" type="button" disabled={isLoading}>
-                            <Filter className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[200px]">
-                          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <div className="p-2">
-                            <p className="mb-1 text-xs font-medium">Equipment Type</p>
-                            <Select
-                              value={typeFilter !== null ? typeFilter.toString() : "all"}
-                              onValueChange={(value) => setTypeFilter(value === "all" ? null : parseInt(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                {equipmentTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id.toString()}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {/* <div className="p-2">
-                            <p className="mb-1 text-xs font-medium">Status</p>
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="available">Available</SelectItem>
-                                <SelectItem value="in-use">In Use</SelectItem>
-                                <SelectItem value="maintenance">Maintenance</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {/* Calculate active filters */}
+                      {(() => {
+                        // Count active filters
+                        let activeFilterCount = 0;
+                        if (typeFilter !== null) activeFilterCount++;
+                        if (statusFilter !== 'all') activeFilterCount++;
+
+                        // Get type name for display
+                        const selectedType = typeFilter !== null
+                          ? equipmentTypes.find(type => type.id === typeFilter)?.name
+                          : null;
+
+                        // Format status for display
+                        const formattedStatus = statusFilter === 'in_use'
+                          ? 'In Use'
+                          : statusFilter !== 'all'
+                            ? capitalizeFirstLetter(statusFilter)
+                            : null;
+
+                        return (
+                          <>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant={activeFilterCount > 0 ? "default" : "outline"}
+                                  size="sm"
+                                  type="button"
+                                  disabled={isLoading}
+                                  className="relative"
+                                >
+                                  <Filter className="h-4 w-4 mr-2" />
+                                  Filters
+                                  {activeFilterCount > 0 && (
+                                    <span className="ml-1 rounded-full bg-primary-foreground text-primary w-5 h-5 inline-flex items-center justify-center text-xs">
+                                      {activeFilterCount}
+                                    </span>
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-[250px]">
+                                <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+                                {activeFilterCount > 0 && (
+                                  <>
+                                    <div className="px-2 py-1 text-xs">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-medium">Active Filters:</span>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 text-xs"
+                                          onClick={() => {
+                                            setTypeFilter(null);
+                                            setStatusFilter('all');
+                                            setCurrentView('all');
+                                          }}
+                                        >
+                                          Clear All
+                                        </Button>
+                                      </div>
+                                      <div className="mt-1 space-y-1">
+                                        {statusFilter !== 'all' && (
+                                          <div className="flex items-center justify-between bg-muted rounded-md px-2 py-1">
+                                            <span>Status: {formattedStatus}</span>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-5 w-5 p-0"
+                                              onClick={() => {
+                                                setStatusFilter('all');
+                                                setCurrentView('all');
+                                              }}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )}
+                                        {typeFilter !== null && (
+                                          <div className="flex items-center justify-between bg-muted rounded-md px-2 py-1">
+                                            <span>Type: {selectedType}</span>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-5 w-5 p-0"
+                                              onClick={() => setTypeFilter(null)}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+                                <div className="p-2">
+                                  <p className="mb-1 text-xs font-medium">Equipment Type</p>
+                                  <Select
+                                    value={typeFilter !== null ? typeFilter.toString() : "all"}
+                                    onValueChange={(value) => setTypeFilter(value === "all" ? null : parseInt(value))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">All Types</SelectItem>
+                                      {equipmentTypes.map((type) => (
+                                        <SelectItem key={type.id} value={type.id.toString()}>
+                                          {type.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        );
+                      })()}
                     </>
                   )}
                 </div>
