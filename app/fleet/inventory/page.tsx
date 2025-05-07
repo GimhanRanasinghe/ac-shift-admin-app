@@ -168,7 +168,7 @@ export default function FleetInventory() {
   const filteredEquipment = displayEquipment.filter((item) => {
     const matchesSearch =
       searchQuery === "" ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.type.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter.toLowerCase()
