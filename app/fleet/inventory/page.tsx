@@ -32,128 +32,64 @@ import {
   CalendarIcon,
 } from "lucide-react"
 
-// Add these imports at the top of the file
+// Component imports
 import { EquipmentDetailsModal } from "@/components/fleet/equipment-details-modal"
 import { EditEquipmentModal } from "@/components/fleet/edit-equipment-modal"
 import { MaintenanceHistoryModal } from "@/components/fleet/maintenance-history-modal"
 import { DecommissionEquipmentModal } from "@/components/fleet/decommission-equipment-modal"
 import { AddEquipmentModal } from "@/components/fleet/add-equipment-modal"
-import { useData } from "@/context/data-context"
 import { useFeatureFlags } from "@/context/feature-flags-context"
-// Add these imports at the top of the file
+
+// Date handling
 import { format, parseISO, isWithinInterval } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+
+// API hooks and services
 import { useApi } from "@/hooks/use-api"
-import { Equipment, equipmentService } from "@/lib/services/equipment-service"
-import { EquipmentCounts, equipmentInventoryService } from "@/lib/services/equipment-inventory-service"
+import {
+  equipmentInventoryService,
+  EquipmentCounts,
+  EquipmentListItem,
+  EquipmentListResponse,
+  EquipmentTypeResponse
+} from "@/lib/services/equipment-inventory-service"
+// import { console } from "inspector"
+
+// UI Equipment model for internal use
+interface UiEquipment {
+  id: string;
+  type: string;
+  category: string;
+  code: string;
+  status: string;
+  lastMaintenance: string;
+  nextMaintenance: string;
+  distance: string;
+}
 
 export default function FleetInventory() {
   const router = useRouter()
-  const { equipment } = useData()
   const { isFeatureEnabled } = useFeatureFlags()
 
-  // Fetch equipment data from API with immediate=false to prevent automatic fetching
-  const { data: apiEquipment, loading, error, execute: fetchEquipment } = useApi<Equipment[]>(
-    () => equipmentService.getAll(),
-    [],
-    false // Don't fetch immediately
-  )
-
-  const { data: counts, loading: countsLoading, error: countsError, execute: fetchCounts } = useApi<EquipmentCounts>(
-      () => equipmentInventoryService.getCounts(),
-      { total: 0, available: 0, in_use: 0, maintenance: 0 },
-      false
-    )
-
-  // Use useEffect with empty dependency array to fetch data only once when component mounts
-  useEffect(() => {
-    // Only fetch once when component mounts
-    fetchEquipment().catch(err => {
-      console.error('Error fetching equipment:', err);
-    }); 
-    fetchCounts().catch(err => {
-      console.error('Error fetching counts:', err);
-    });
-  }, []) // Empty dependency array ensures this runs only once
-
-  // Map API equipment to UI equipment model
-  const mappedEquipment = apiEquipment ? apiEquipment.map((item) => ({
-    id: item.id.toString(),
-    type: getEquipmentType(item.equipment_type_id),
-    category: "Powered Equipment", // Hard-coded value
-    code: item.serial_number,
-    powerType: "Diesel", // Hard-coded value
-    aircraftCompatibility: "All", // Hard-coded value
-    location: { lat: 0, lng: 0 }, // Hard-coded value
-    distance: "100m", // Hard-coded value
-    status: getEquipmentStatus(item), // Determine status based on maintenance dates
-    lastUsed: formatDate(item.updated_at),
-    lastMaintenance: formatDate(item.last_maintenance_date),
-    nextMaintenance: formatDate(item.next_maintenance_date),
-    certificationRequired: "Basic GSE", // Hard-coded value
-  })) : [];
-
-  // Helper function to get equipment type based on type ID
-  function getEquipmentType(typeId: number): string {
-    const types: Record<number, string> = {
-      1: "Baggage Tractor",
-      2: "Belt Loader",
-      3: "Pushback Tractor",
-      4: "Container Loader",
-      5: "Ground Power Unit"
-    };
-    return types[typeId] || "Unknown Equipment";
-  }
-
-  // Helper function to determine equipment status
-  function getEquipmentStatus(item: Equipment): string {
-    const now = new Date();
-    const nextMaintenance = new Date(item.next_maintenance_date);
-
-    if (nextMaintenance < now) {
-      return "Maintenance";
-    }
-
-    // Randomly assign "Available" or "In Use" for demo purposes
-    return Math.random() > 0.5 ? "Available" : "In Use";
-  }
-
-  // Helper function to format dates
-  function formatDate(dateString: string): string {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy");
-    } catch (e) {
-      return "N/A";
-    }
-  }
-
-  // Use the mapped equipment or fall back to mock data if API fails
-  const displayEquipment = apiEquipment && apiEquipment.length > 0 ? mappedEquipment : [];
-
-  // Check feature flags
-  const addEquipmentEnabled = isFeatureEnabled("addEquipment")
-  const editEquipmentEnabled = isFeatureEnabled("editEquipment")
-  const exportDataEnabled = isFeatureEnabled("exportData")
-  const decommissionEquipmentEnabled = isFeatureEnabled("decommissionEquipment")
-  const maintenanceHistoryEnabled = isFeatureEnabled("maintenanceHistory")
-  const dateRangeFilterEnabled = isFeatureEnabled("dateRangeFilter")
-  const advancedFiltersEnabled = isFeatureEnabled("advancedFilters")
-
+  // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState<number | null>(null)
   const [currentView, setCurrentView] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  // Add these state variables inside the FleetInventory component, after the existing useState declarations
-  const [selectedEquipment, setSelectedEquipment] = useState<any>(null)
+  // State for modals
+  const [selectedEquipment, setSelectedEquipment] = useState<UiEquipment | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [showDecommissionModal, setShowDecommissionModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
-  // Add these state variables inside the FleetInventory component, after the existing useState declarations
+
+  // State for date filter
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
     to: Date | undefined
@@ -164,45 +100,124 @@ export default function FleetInventory() {
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
-  // Filter equipment based on search and filters
-  const filteredEquipment = displayEquipment.filter((item) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.type.toLowerCase().includes(searchQuery.toLowerCase())
+  // Feature flags
+  const addEquipmentEnabled = isFeatureEnabled("addEquipment")
+  const editEquipmentEnabled = isFeatureEnabled("editEquipment")
+  const exportDataEnabled = isFeatureEnabled("exportData")
+  const decommissionEquipmentEnabled = isFeatureEnabled("decommissionEquipment")
+  const maintenanceHistoryEnabled = isFeatureEnabled("maintenanceHistory")
+  const dateRangeFilterEnabled = isFeatureEnabled("dateRangeFilter")
+  const advancedFiltersEnabled = isFeatureEnabled("advancedFilters")
 
-    const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter.toLowerCase()
+  // API calls
+  const { data: counts, loading: countsLoading, error: countsError, execute: fetchCounts } = useApi<EquipmentCounts>(
+    () => equipmentInventoryService.getCounts(),
+    { total: 0, available: 0, in_use: 0, maintenance: 0 },
+    false
+  )
 
-    const matchesType = typeFilter === "all" || item.type.toLowerCase().includes(typeFilter.toLowerCase())
+  // const { data: typesResponse, loading: typesLoading, error: typesError, execute: fetchTypes } = useApi<EquipmentTypeResponse>(
+  //   () => equipmentInventoryService.getTypes(),
+  //   { types: [] },
+  //   false
+  // )
 
-    const matchesView =
-      currentView === "all" ||
-      (currentView === "maintenance" && item.status === "Maintenance") ||
-      (currentView === "available" && item.status === "Available") ||
-      (currentView === "in-use" && item.status === "In Use")
+  const { data: listResponse, loading: listLoading, error: listError, execute: fetchList } = useApi<EquipmentListResponse>(
+    () => equipmentInventoryService.getList(buildListParams()),
+    {
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 1
+    },
+    false
+  )
 
-    // Add date range filtering
-    let matchesDateRange = true
+  // Build params for list API
+  const buildListParams = () => {
+    const params: any = {
+      page: currentPage,
+      page_size: itemsPerPage,
+    }
+
+    if (statusFilter !== "all") {
+      params.status = statusFilter
+    }
+
+    if (typeFilter !== null) {
+      params.equipment_type_id = typeFilter
+    }
+
+    // if (searchQuery) {
+    //   params.search = searchQuery
+    // }
+
     if (showDateFilter && dateRange.from && dateRange.to) {
-      try {
-        const lastMaintenanceDate = parseISO(item.lastMaintenance)
-        matchesDateRange = isWithinInterval(lastMaintenanceDate, {
-          start: dateRange.from,
-          end: dateRange.to,
-        })
-      } catch (error) {
-        console.error("Error parsing date:", error)
-        matchesDateRange = true
+      params.last_maintenance_from = format(dateRange.from, "yyyy-MM-dd")
+      params.last_maintenance_to = format(dateRange.to, "yyyy-MM-dd")
+    }
+    console.log(params);
+    return params
+  }
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchCounts().catch(err => console.error('Error fetching counts:', err))
+    // fetchTypes().catch(err => console.error('Error fetching types:', err))
+  }, [])
+
+  // Fetch list when filters change
+  useEffect(() => {
+    fetchList().catch(err => console.error('Error fetching equipment list:', err))
+  }, [currentPage, itemsPerPage, statusFilter, typeFilter, showDateFilter, dateRange])
+
+  // Map API equipment to UI model
+  const mapToUiEquipment = (item: EquipmentListItem): UiEquipment => {
+    // Get equipment type name from the equipment types array
+    const equipmentType = equipmentTypes.find(type => type.id === item.id);
+    // console.log(equipmentType);
+
+    // Determine status based on maintenance dates if not provided
+    let status = item.status;
+    if (!status) {
+      const now = new Date();
+      const nextMaintenance = new Date(item.next_maintenance_date);
+      if (nextMaintenance < now) {
+        status = 'maintenance';
+      } else {
+        // Default to available
+        status = 'available';
       }
     }
 
-    return matchesSearch && matchesStatus && matchesType && matchesView && matchesDateRange
-  })
+    return {
+      id: item.id.toString(),
+      type: item.type_name || equipmentType?.name || "Unknown Type",
+      category: item.category || (item.is_powered ? "Powered Equipment" : "Non-powered Equipment"),
+      code: item.serial_number,
+      status: capitalizeFirstLetter((status || 'available').replace('_', ' ')),
+      lastMaintenance: formatDate(item.last_maintenance_date),
+      nextMaintenance: formatDate(item.next_maintenance_date),
+      distance: item.distance || "N/A",
+    };
+  }
 
-  // Get unique equipment types for filter
-  const equipmentTypes = Array.from(new Set(displayEquipment.map((item) => item.type)))
+  // Helper function to format dates
+  function formatDate(dateString: string): string {
+    try {
+      return format(new Date(dateString), "MMM d, yyyy")
+    } catch (e) {
+      return "N/A"
+    }
+  }
 
-  // Add a function to reset date filters
+  // Helper function to capitalize first letter
+  function capitalizeFirstLetter(string: string): string {
+    return string.charAt(0).toUpperCase() + string.slice(1)
+  }
+
+  // Reset date filter
   const resetDateFilter = () => {
     setDateRange({ from: undefined, to: undefined })
     setShowDateFilter(false)
@@ -227,6 +242,48 @@ export default function FleetInventory() {
       to: today,
     })
   }
+
+  // Get equipment types for filter
+  // const equipmentTypes = typesResponse?.types || []
+  const equipmentTypes = [
+    {
+      "id": 1,
+      "description": "test1",
+      "capacity": 0,
+      "specifications": {
+        "spec": "test"
+      },
+      "class": "A",
+      "is_powered": 0,
+      "name": "Tractor"
+    },
+    {
+      "id": 2,
+      "description": "test2",
+      "capacity": 0,
+      "specifications": {},
+      "class": "B",
+      "is_powered": 1,
+      "name": "Test1"
+    },
+    {
+      "id": 3,
+      "description": "test3",
+      "capacity": 0,
+      "specifications": {},
+      "class": "C",
+      "is_powered": 1,
+      "name": "Test2"
+    }
+  ]
+
+
+  // Map API equipment to UI model
+  const displayEquipment = listResponse?.items.map(mapToUiEquipment) || []
+
+  // Loading state
+  let typesLoading = false
+  const isLoading = countsLoading || typesLoading || listLoading
 
   return (
     <DesktopLayout>
@@ -271,22 +328,50 @@ export default function FleetInventory() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Equipment Inventory</CardTitle>
-            <CardDescription>Manage and monitor all ground service equipment in the fleet</CardDescription>
-            {/* {loading && <div className="mt-2 text-sm text-muted-foreground">Loading equipment data...</div>}
-            {error && <div className="mt-2 text-sm text-red-500">Error loading equipment data. Using mock data instead.</div>}
-            {apiEquipment && apiEquipment.length > 0 && (
-              <div className="mt-2 text-sm text-green-500">Loaded {apiEquipment.length} equipment items from API</div>
-            )} */}
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Equipment Inventory</CardTitle>
+                <CardDescription>Manage and monitor all ground service equipment in the fleet</CardDescription>
+              </div>
+              {isLoading && (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span className="text-xs text-muted-foreground">Loading...</span>
+                </div>
+              )}
+            </div>
+            {(countsError || listError) && (
+              <div className="mt-2 text-sm text-red-500">Error loading equipment data. Please try again.</div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <Tabs defaultValue="all" value={currentView} onValueChange={setCurrentView}>
                 <TabsList>
-                  <TabsTrigger value="all">All Equipment ({counts?.total || 0})</TabsTrigger>
-                  <TabsTrigger value="available">Available ({counts?.available || 0})</TabsTrigger>
-                  <TabsTrigger value="in-use">In Use ({counts?.in_use || 0})</TabsTrigger>
-                  <TabsTrigger value="maintenance">Maintenance ({counts?.maintenance || 0})</TabsTrigger>
+                  {isLoading ? (
+                    // Skeleton loading for tabs
+                    <>
+                      <TabsTrigger value="all" disabled>
+                        All Equipment (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                      </TabsTrigger>
+                      <TabsTrigger value="available" disabled>
+                        Available (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                      </TabsTrigger>
+                      <TabsTrigger value="in-use" disabled>
+                        In Use (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                      </TabsTrigger>
+                      <TabsTrigger value="maintenance" disabled>
+                        Maintenance (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                      </TabsTrigger>
+                    </>
+                  ) : (
+                    <>
+                      <TabsTrigger value="all">All Equipment ({counts?.total || 0})</TabsTrigger>
+                      <TabsTrigger value="available">Available ({counts?.available || 0})</TabsTrigger>
+                      <TabsTrigger value="in-use">In Use ({counts?.in_use || 0})</TabsTrigger>
+                      <TabsTrigger value="maintenance">Maintenance ({counts?.maintenance || 0})</TabsTrigger>
+                    </>
+                  )}
                 </TabsList>
               </Tabs>
 
@@ -296,10 +381,11 @@ export default function FleetInventory() {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="search"
-                      placeholder="Search equipment..."
+                      placeholder={isLoading ? "Loading equipment data..." : "Search equipment..."}
                       className="pl-8"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      disabled={isLoading}
                     />
                   </div>
 
@@ -317,6 +403,7 @@ export default function FleetInventory() {
                             )}
                             onClick={() => setIsCalendarOpen(true)}
                             type="button"
+                            disabled={isLoading}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {dateRange.from && dateRange.to ? (
@@ -416,7 +503,7 @@ export default function FleetInventory() {
                     <>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" type="button">
+                          <Button variant="outline" size="icon" type="button" disabled={isLoading}>
                             <Filter className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -425,15 +512,18 @@ export default function FleetInventory() {
                           <DropdownMenuSeparator />
                           <div className="p-2">
                             <p className="mb-1 text-xs font-medium">Equipment Type</p>
-                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                            <Select
+                              value={typeFilter !== null ? typeFilter.toString() : "all"}
+                              onValueChange={(value) => setTypeFilter(value === "all" ? null : parseInt(value))}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">All Types</SelectItem>
                                 {equipmentTypes.map((type) => (
-                                  <SelectItem key={type} value={type.toLowerCase()}>
-                                    {type}
+                                  <SelectItem key={type.id} value={type.id.toString()}>
+                                    {type.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -448,16 +538,13 @@ export default function FleetInventory() {
                               <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>
                                 <SelectItem value="available">Available</SelectItem>
-                                <SelectItem value="in use">In Use</SelectItem>
+                                <SelectItem value="in_use">In Use</SelectItem>
                                 <SelectItem value="maintenance">Maintenance</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <Button variant="outline" size="icon" type="button">
-                        <SlidersHorizontal className="h-4 w-4" />
-                      </Button>
                     </>
                   )}
                 </div>
@@ -478,8 +565,38 @@ export default function FleetInventory() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEquipment.length > 0 ? (
-                      filteredEquipment.map((equipment) => (
+                    {isLoading ? (
+                      // Loading skeleton
+                      Array(5).fill(0).map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          <TableCell>
+                            <div className="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-20 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-28 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-8 w-8 animate-pulse rounded bg-gray-200"></div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : displayEquipment.length > 0 ? (
+                      displayEquipment.map((equipment: UiEquipment) => (
                         <TableRow key={equipment.id}>
                           <TableCell className="font-medium">{equipment.code}</TableCell>
                           <TableCell>{equipment.type}</TableCell>
@@ -500,7 +617,7 @@ export default function FleetInventory() {
                           </TableCell>
                           <TableCell>{equipment.lastMaintenance}</TableCell>
                           <TableCell>{equipment.nextMaintenance}</TableCell>
-                          <TableCell>{equipment.distance} from terminal</TableCell>
+                          <TableCell>{equipment.distance}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -566,10 +683,43 @@ export default function FleetInventory() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Pagination */}
+              {!isLoading && listResponse && listResponse.total_pages > 1 && (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(listResponse.page - 1) * listResponse.page_size + 1} to{" "}
+                    {Math.min(listResponse.page * listResponse.page_size, listResponse.total)} of {listResponse.total} items
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="text-sm">
+                      Page {listResponse.page} of {listResponse.total_pages}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, listResponse.total_pages))}
+                      disabled={currentPage === listResponse.total_pages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Modals */}
       <EquipmentDetailsModal equipment={selectedEquipment} open={showDetailsModal} onOpenChange={setShowDetailsModal} />
 
       {editEquipmentEnabled && (
