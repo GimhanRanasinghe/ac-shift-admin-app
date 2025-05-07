@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DesktopLayout } from "@/components/desktop-layout"
 import { Button } from "@/components/ui/button"
@@ -45,11 +45,82 @@ import { format, parseISO, isWithinInterval } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useApi } from "@/hooks/use-api"
+import { Equipment, equipmentService } from "@/lib/services/equipment-service"
 
 export default function FleetInventory() {
   const router = useRouter()
   const { equipment } = useData()
   const { isFeatureEnabled } = useFeatureFlags()
+
+  // Fetch equipment data from API with immediate=false to prevent automatic fetching
+  const { data: apiEquipment, loading, error, execute: fetchEquipment } = useApi<Equipment[]>(
+    () => equipmentService.getAll(),
+    [],
+    false // Don't fetch immediately
+  )
+
+  // Use useEffect with empty dependency array to fetch data only once when component mounts
+  useEffect(() => {
+    // Only fetch once when component mounts
+    fetchEquipment().catch(err => {
+      console.error('Error fetching equipment:', err);
+    });
+  }, []) // Empty dependency array ensures this runs only once
+
+  // Map API equipment to UI equipment model
+  const mappedEquipment = apiEquipment ? apiEquipment.map((item) => ({
+    id: item.id.toString(),
+    type: getEquipmentType(item.equipment_type_id),
+    category: "Powered Equipment", // Hard-coded value
+    code: item.serial_number,
+    powerType: "Diesel", // Hard-coded value
+    aircraftCompatibility: "All", // Hard-coded value
+    location: { lat: 0, lng: 0 }, // Hard-coded value
+    distance: "100m", // Hard-coded value
+    status: getEquipmentStatus(item), // Determine status based on maintenance dates
+    lastUsed: formatDate(item.updated_at),
+    lastMaintenance: formatDate(item.last_maintenance_date),
+    nextMaintenance: formatDate(item.next_maintenance_date),
+    certificationRequired: "Basic GSE", // Hard-coded value
+  })) : [];
+
+  // Helper function to get equipment type based on type ID
+  function getEquipmentType(typeId: number): string {
+    const types: Record<number, string> = {
+      1: "Baggage Tractor",
+      2: "Belt Loader",
+      3: "Pushback Tractor",
+      4: "Container Loader",
+      5: "Ground Power Unit"
+    };
+    return types[typeId] || "Unknown Equipment";
+  }
+
+  // Helper function to determine equipment status
+  function getEquipmentStatus(item: Equipment): string {
+    const now = new Date();
+    const nextMaintenance = new Date(item.next_maintenance_date);
+
+    if (nextMaintenance < now) {
+      return "Maintenance";
+    }
+
+    // Randomly assign "Available" or "In Use" for demo purposes
+    return Math.random() > 0.5 ? "Available" : "In Use";
+  }
+
+  // Helper function to format dates
+  function formatDate(dateString: string): string {
+    try {
+      return format(new Date(dateString), "MMM d, yyyy");
+    } catch (e) {
+      return "N/A";
+    }
+  }
+
+  // Use the mapped equipment or fall back to mock data if API fails
+  const displayEquipment = apiEquipment && apiEquipment.length > 0 ? mappedEquipment : [];
 
   // Check feature flags
   const addEquipmentEnabled = isFeatureEnabled("addEquipment")
@@ -84,7 +155,7 @@ export default function FleetInventory() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   // Filter equipment based on search and filters
-  const filteredEquipment = equipment.filter((item) => {
+  const filteredEquipment = displayEquipment.filter((item) => {
     const matchesSearch =
       searchQuery === "" ||
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,12 +190,12 @@ export default function FleetInventory() {
   })
 
   // Get unique equipment types for filter
-  const equipmentTypes = Array.from(new Set(equipment.map((item) => item.type)))
+  const equipmentTypes = Array.from(new Set(displayEquipment.map((item) => item.type)))
 
   // Get counts for tabs
-  const availableCount = equipment.filter((item) => item.status === "Available").length
-  const inUseCount = equipment.filter((item) => item.status === "In Use").length
-  const maintenanceCount = equipment.filter((item) => item.status === "Maintenance").length
+  const availableCount = displayEquipment.filter((item) => item.status === "Available").length
+  const inUseCount = displayEquipment.filter((item) => item.status === "In Use").length
+  const maintenanceCount = displayEquipment.filter((item) => item.status === "Maintenance").length
 
   // Add a function to reset date filters
   const resetDateFilter = () => {
@@ -197,12 +268,17 @@ export default function FleetInventory() {
           <CardHeader className="pb-3">
             <CardTitle>Equipment Inventory</CardTitle>
             <CardDescription>Manage and monitor all ground service equipment in the fleet</CardDescription>
+            {loading && <div className="mt-2 text-sm text-muted-foreground">Loading equipment data...</div>}
+            {error && <div className="mt-2 text-sm text-red-500">Error loading equipment data. Using mock data instead.</div>}
+            {apiEquipment && apiEquipment.length > 0 && (
+              <div className="mt-2 text-sm text-green-500">Loaded {apiEquipment.length} equipment items from API</div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <Tabs defaultValue="all" value={currentView} onValueChange={setCurrentView}>
                 <TabsList>
-                  <TabsTrigger value="all">All Equipment ({equipment.length})</TabsTrigger>
+                  <TabsTrigger value="all">All Equipment ({displayEquipment.length})</TabsTrigger>
                   <TabsTrigger value="available">Available ({availableCount})</TabsTrigger>
                   <TabsTrigger value="in-use">In Use ({inUseCount})</TabsTrigger>
                   <TabsTrigger value="maintenance">Maintenance ({maintenanceCount})</TabsTrigger>

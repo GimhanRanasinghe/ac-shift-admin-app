@@ -50,8 +50,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         if (authService.isAuthenticated()) {
           setLoading(true);
-          const userData = await authService.getCurrentUser();
-          setUser(mapToUser(userData));
+          const userData = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null; 
+          console.log('User data from localStorage:', userData);
+          // const userData = JSON.parse(localStorage.getItem('user'));
+          setUser(userData);
         }
       } catch (err) {
         console.error('Failed to load user:', err);
