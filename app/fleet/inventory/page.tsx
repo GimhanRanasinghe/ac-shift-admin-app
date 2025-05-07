@@ -562,8 +562,12 @@ export default function FleetInventory() {
                                 to: range?.to,
                               })
                             }}
-                            numberOfMonths={2}
-                            defaultMonth={dateRange.from}
+                            numberOfMonths={1}
+                            defaultMonth={dateRange.from || new Date()}
+                            showOutsideDays={true}
+                            fixedWeeks={true}
+                            ISOWeek={false}
+                            captionLayout="dropdown"
                           />
                           <div className="p-3 border-t flex justify-between">
                             <Button variant="ghost" size="sm" type="button" onClick={resetDateFilter}>
