@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, ArrowRight, Check, Truck, Wifi, Thermometer, Gauge, Camera, Bluetooth } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Truck, Wifi, Thermometer, Gauge, Camera, Bluetooth, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Equipment, equipmentService } from "@/lib/services/equipment-service"
 
 // Sample equipment types
 const equipmentTypes = [
@@ -153,6 +154,8 @@ export default function EquipmentOnboarding() {
   const [availableYears, setAvailableYears] = useState<{ value: string; label: string }[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [createdEquipmentId, setCreatedEquipmentId] = useState<number | null>(null)
 
   // Generate years for dropdown (current year down to 1980)
   useEffect(() => {
@@ -233,15 +236,59 @@ export default function EquipmentOnboarding() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = () => {
-    setIsSubmitting(true)
+  // Map form data to API equipment model
+  const mapFormDataToApiModel = (): Omit<Equipment, 'id'> => {
+    // Get equipment type ID from the selected equipment type
+    const equipmentTypeId = equipmentTypes.findIndex(type => type.value === equipmentData.equipmentType) + 1;
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setIsComplete(true)
-    }, 1500)
-  }
+    // Format dates
+    const today = new Date().toISOString().split('T')[0];
+    const lastMaintenanceDate = equipmentData.lastMaintenanceDate || today;
+
+    // Calculate next maintenance date based on interval
+    const nextMaintenanceDate = new Date(lastMaintenanceDate);
+    nextMaintenanceDate.setDate(nextMaintenanceDate.getDate() + parseInt(equipmentData.maintenanceInterval));
+
+    // Current timestamp for created_at and updated_at
+    const timestamp = new Date().toISOString();
+
+    return {
+      equipment_type_id: equipmentTypeId,
+      serial_number: equipmentData.serialNumber,
+      manufacturer: equipmentData.manufacturer,
+      model: equipmentData.model,
+      year_manufactured: parseInt(equipmentData.yearOfManufacture),
+      purchase_date: today, // Default to today if not provided
+      last_maintenance_date: lastMaintenanceDate,
+      next_maintenance_date: nextMaintenanceDate.toISOString().split('T')[0],
+      created_at: timestamp,
+      updated_at: timestamp
+    };
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Map form data to API model
+      const apiEquipment = mapFormDataToApiModel();
+
+      // Call the API to create the equipment
+      const response = await equipmentService.create(apiEquipment);
+
+      // Store the created equipment ID
+      setCreatedEquipmentId(response.id);
+
+      // Set complete state
+      setIsComplete(true);
+    } catch (err) {
+      console.error('Error creating equipment:', err);
+      setError('Failed to create equipment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const generateEquipmentId = () => {
     if (!equipmentData.equipmentType) return "---"
@@ -1013,22 +1060,34 @@ export default function EquipmentOnboarding() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
-              </Button>
-              {currentStep < 4 ? (
-                <Button onClick={handleNext}>
-                  Next
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Processing..." : "Complete Onboarding"}
-                  <Check className="ml-2 h-4 w-4" />
-                </Button>
+            <CardFooter className="flex flex-col gap-4">
+              {error && (
+                <div className="w-full p-3 bg-red-50 border border-red-200 rounded-md text-red-600 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>{error}</span>
+                </div>
               )}
+              <div className="flex justify-between w-full">
+                <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1 || isSubmitting}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
+                {currentStep < 4 ? (
+                  <Button onClick={handleNext}>
+                    Next
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? "Processing..." : "Complete Onboarding"}
+                    {isSubmitting ? (
+                      <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <Check className="ml-2 h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
             </CardFooter>
           </Card>
         ) : (
@@ -1046,7 +1105,7 @@ export default function EquipmentOnboarding() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Equipment ID:</span>
-                    <span className="font-medium text-gray-100">{generateEquipmentId()}</span>
+                    <span className="font-medium text-gray-100">{createdEquipmentId || generateEquipmentId()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Type:</span>
