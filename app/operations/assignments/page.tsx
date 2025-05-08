@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { DesktopLayout } from "@/components/desktop-layout"
 import { AddAssignmentModal } from "@/components/operations/add-assignment-modal"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   DropdownMenu,
@@ -18,11 +18,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Download,
-  Filter,
   MoreHorizontal,
   Plus,
-  Search,
-  SlidersHorizontal,
   Calendar as CalendarIcon,
   Truck,
   X,
@@ -51,28 +48,28 @@ import userData from "@/data/user.json"
 import equipmentData from "@/data/equipment.json"
 
 // Create sample assignments data
-const generateAssignments = () => {
-  const shifts = ["Morning (6AM-2PM)", "Afternoon (2PM-10PM)", "Night (10PM-6AM)"]
-  const statuses = ["active", "scheduled", "completed"]
-  const locations = ["Terminal 1", "Terminal 3", "Cargo Area", "Maintenance Bay"]
+// const generateAssignments = () => {
+//   const shifts = ["Morning (6AM-2PM)", "Afternoon (2PM-10PM)", "Night (10PM-6AM)"]
+//   const statuses = ["active", "scheduled", "completed"]
+//   const locations = ["Terminal 1", "Terminal 3", "Cargo Area", "Maintenance Bay"]
 
-  return Array(20)
-    .fill(null)
-    .map((_, index) => ({
-      id: `ASG${10000 + index}`,
-      operatorId: `AC${100000 + (index % 10)}`,
-      operatorName: index % 10 === 0 ? userData.name : `Operator ${(index % 10) + 1}`,
-      equipmentId: equipmentData[index % equipmentData.length].id,
-      equipmentType: equipmentData[index % equipmentData.length].type,
-      shift: shifts[index % 3],
-      date: new Date(Date.now() + (index % 14) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      status: statuses[index % 3],
-      location: locations[index % 4],
-      duration: `${4 + (index % 4)} hours`,
-    }))
-}
+//   return Array(20)
+//     .fill(null)
+//     .map((_, index) => ({
+//       id: `ASG${10000 + index}`,
+//       operatorId: `AC${100000 + (index % 10)}`,
+//       operatorName: index % 10 === 0 ? userData.name : `Operator ${(index % 10) + 1}`,
+//       equipmentId: equipmentData[index % equipmentData.length].id,
+//       equipmentType: equipmentData[index % equipmentData.length].type,
+//       shift: shifts[index % 3],
+//       date: new Date(Date.now() + (index % 14) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+//       status: statuses[index % 3],
+//       location: locations[index % 4],
+//       duration: `${4 + (index % 4)} hours`,
+//     }))
+// }
 
-const assignmentsData = generateAssignments()
+// const assignmentsData = generateAssignments()
 
 // UI Assignment model for internal use
 interface UiAssignment {
@@ -96,10 +93,10 @@ interface UiAssignment {
 
 export default function OperatorAssignments() {
   // State for filters and pagination
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [currentView, setCurrentView] = useState("all")
-  const [dateFilter, setDateFilter] = useState("all")
+  const [dateFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
 
@@ -108,12 +105,12 @@ export default function OperatorAssignments() {
     from: Date | undefined
     to: Date | undefined
   }>({
-    from: undefined,
-    to: undefined,
+    from: new Date(),
+    to: new Date(),
   })
   const [startTime, setStartTime] = useState("00:00")
   const [endTime, setEndTime] = useState("23:59")
-  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [showDateFilter, setShowDateFilter] = useState(true)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   // Feature flags
@@ -272,16 +269,25 @@ export default function OperatorAssignments() {
 
   // Reset date filter
   const resetDateFilter = () => {
-    setDateRange({ from: undefined, to: undefined })
+    const today = new Date()
+    setDateRange({ from: today, to: today })
     setShowDateFilter(false)
   }
 
   // Apply date filter
   const applyDateFilter = () => {
-    if (dateRange.from && dateRange.to) {
-      setShowDateFilter(true)
-      setIsCalendarOpen(false)
+    // If no dates are selected, set to current date
+    if (!dateRange.from || !dateRange.to) {
+      const today = new Date()
+      setDateRange({
+        from: today,
+        to: today,
+      })
     }
+
+    // Apply the filter
+    setShowDateFilter(true)
+    setIsCalendarOpen(false)
   }
 
   // Set preset date ranges
@@ -318,24 +324,24 @@ export default function OperatorAssignments() {
   // Loading state
   const isLoading = countsLoading || listLoading
 
-  // Use sample data as fallback if API fails or during development
-  const fallbackAssignments = assignmentsData.map(assignment => ({
-    id: assignment.id,
-    operatorId: assignment.operatorId,
-    operatorName: assignment.operatorName,
-    operatorEmail: "user@example.com",
-    equipmentId: assignment.equipmentId,
-    equipmentType: assignment.equipmentType,
-    equipmentModel: "Model XYZ",
-    status: assignment.status,
-    startTime: assignment.date + " 08:00",
-    endTime: assignment.date + " 16:00",
-    taskType: "Equipment Use",
-    priority: "medium",
-  }))
+  // // Use sample data as fallback if API fails or during development
+  // const fallbackAssignments = assignmentsData.map(assignment => ({
+  //   id: assignment.id,
+  //   operatorId: assignment.operatorId,
+  //   operatorName: assignment.operatorName,
+  //   operatorEmail: "user@example.com",
+  //   equipmentId: assignment.equipmentId,
+  //   equipmentType: assignment.equipmentType,
+  //   equipmentModel: "Model XYZ",
+  //   status: assignment.status,
+  //   startTime: assignment.date + " 08:00",
+  //   endTime: assignment.date + " 16:00",
+  //   taskType: "Equipment Use",
+  //   priority: "medium",
+  // }))
 
   // Use API data if available, otherwise use fallback
-  const assignments = displayAssignments.length > 0 ? displayAssignments : fallbackAssignments
+  const assignments = displayAssignments.length > 0 ? displayAssignments : []
 
   return (
     <DesktopLayout>
@@ -670,10 +676,19 @@ export default function OperatorAssignments() {
                                 to: dateRange.to,
                               }}
                               onSelect={(range) => {
-                                setDateRange({
-                                  from: range?.from,
-                                  to: range?.to,
-                                })
+                                // If no range is selected, use current date
+                                if (!range?.from && !range?.to) {
+                                  const today = new Date()
+                                  setDateRange({
+                                    from: today,
+                                    to: today,
+                                  })
+                                } else {
+                                  setDateRange({
+                                    from: range?.from,
+                                    to: range?.to,
+                                  })
+                                }
                               }}
                               numberOfMonths={1}
                               defaultMonth={dateRange.from || new Date()}
@@ -731,11 +746,11 @@ export default function OperatorAssignments() {
                           </PopoverContent>
                         </Popover>
 
-                        {showDateFilter && (
+                        {/* {showDateFilter && (
                           <Button variant="ghost" size="icon" onClick={resetDateFilter} className="h-8 w-8" type="button">
                             <X className="h-4 w-4" />
                           </Button>
-                        )}
+                        )} */}
                       </div>
                     )}
                     </div>
