@@ -331,7 +331,7 @@ export default function MaintenanceSchedule() {
 
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
-                  <div className="relative w-full md:w-[300px]">
+                  {/* <div className="relative w-full md:w-[300px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="search"
@@ -341,7 +341,7 @@ export default function MaintenanceSchedule() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       disabled={isLoading}
                     />
-                  </div>
+                  </div> */}
 
                   {dateRangeFilterEnabled && (
                     <div className="flex items-center gap-2">
