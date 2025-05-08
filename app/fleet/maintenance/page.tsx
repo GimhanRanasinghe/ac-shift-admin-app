@@ -1,154 +1,161 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { DesktopLayout } from "@/components/desktop-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Download, Plus, Calendar, Filter, List, CalendarRange } from "lucide-react"
+import { Search, Download, Plus, Calendar, Filter, List, CalendarRange, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MaintenanceCalendarView } from "@/components/fleet/maintenance-calendar-view"
 import { ScheduleMaintenanceModal } from "@/components/fleet/schedule-maintenance-modal"
 import { DateRangePicker } from "@/components/date-range-picker"
 import type { DateRange } from "react-day-picker"
-import { addDays, isWithinInterval, parseISO } from "date-fns"
+import { addDays, format, isWithinInterval, parseISO } from "date-fns"
+import { useFeatureFlags } from "@/context/feature-flags-context"
 
-// Sample maintenance schedule data
-const maintenanceData = [
-  {
-    id: "M-1001",
-    equipmentId: "BTG-1045",
-    equipmentType: "Baggage Tractor",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-15",
-    status: "upcoming",
-    assignedTo: "John Smith",
-    priority: "medium",
-  },
-  {
-    id: "M-1002",
-    equipmentId: "BLW-0872",
-    equipmentType: "Belt Loader",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-18",
-    status: "upcoming",
-    assignedTo: "Sarah Johnson",
-    priority: "high",
-  },
-  {
-    id: "M-1003",
-    equipmentId: "ATF-0023",
-    equipmentType: "Pushback Tractor",
-    maintenanceType: "Unscheduled",
-    dueDate: "2024-05-10",
-    status: "overdue",
-    assignedTo: "Unassigned",
-    priority: "high",
-  },
-  {
-    id: "M-1004",
-    equipmentId: "GPB-0789",
-    equipmentType: "Ground Power Unit",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-25",
-    status: "upcoming",
-    assignedTo: "Mike Davis",
-    priority: "low",
-  },
-  {
-    id: "M-1005",
-    equipmentId: "CLS-0456",
-    equipmentType: "Container Loader",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-12",
-    status: "overdue",
-    assignedTo: "Unassigned",
-    priority: "medium",
-  },
-  {
-    id: "M-1006",
-    equipmentId: "LTL-0234",
-    equipmentType: "Lavatory Truck",
-    maintenanceType: "Unscheduled",
-    dueDate: "2024-05-20",
-    status: "upcoming",
-    assignedTo: "Emily Wilson",
-    priority: "medium",
-  },
-  {
-    id: "M-1007",
-    equipmentId: "BTG-2178",
-    equipmentType: "Baggage Tractor",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-28",
-    status: "upcoming",
-    assignedTo: "John Smith",
-    priority: "medium",
-  },
-  {
-    id: "M-1008",
-    equipmentId: "PBT-0567",
-    equipmentType: "Pushback Tractor",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-05",
-    status: "completed",
-    assignedTo: "Alex Johnson",
-    priority: "high",
-  },
-  {
-    id: "M-1009",
-    equipmentId: "WTR-0123",
-    equipmentType: "Water Truck",
-    maintenanceType: "Scheduled",
-    dueDate: "2024-05-08",
-    status: "completed",
-    assignedTo: "Maria Rodriguez",
-    priority: "medium",
-  },
-]
+// API hooks and services
+import { useApi } from "@/hooks/use-api"
+import {
+  maintenanceService,
+  MaintenanceCounts,
+  MaintenanceTaskItem,
+  MaintenanceListResponse
+} from "@/lib/services/maintenance-service"
+
+// UI Maintenance Task model for internal use
+interface UiMaintenanceTask {
+  id: string;
+  equipmentId: string;
+  equipmentType: string;
+  maintenanceType: string;
+  dueDate: string;
+  status: string;
+  assignedTo: string;
+  priority: string;
+  type: string;
+}
 
 export default function MaintenanceSchedule() {
+  const router = useRouter()
+  const { isFeatureEnabled } = useFeatureFlags()
+
+  // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
+  const [priorityFilter, setPriorityFilter] = useState("all")
+  const [assignedToFilter, setAssignedToFilter] = useState<number | null>(null)
+  const [currentView, setCurrentView] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [viewMode, setViewMode] = useState("list")
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+
+  // State for date filter
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 30),
   })
   const [showDateFilter, setShowDateFilter] = useState(false)
 
-  // Filter maintenance data based on search, filters, and date range
-  const filteredData = maintenanceData.filter((item) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      item.equipmentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.equipmentType.toLowerCase().includes(searchQuery.toLowerCase())
+  // Feature flags
+  const scheduleMaintenanceEnabled = isFeatureEnabled("scheduleMaintenance")
+  const exportDataEnabled = isFeatureEnabled("exportData")
+  const calendarViewEnabled = isFeatureEnabled("calendarView")
+  const dateRangeFilterEnabled = isFeatureEnabled("dateRangeFilter")
+  const advancedFiltersEnabled = isFeatureEnabled("advancedFilters")
 
-    const matchesStatus = statusFilter === "all" || item.status === statusFilter
-    const matchesType = typeFilter === "all" || item.maintenanceType === typeFilter
+  // API calls
+  const { data: counts, loading: countsLoading, error: countsError, execute: fetchCounts } = useApi<MaintenanceCounts>(
+    () => maintenanceService.getCounts(),
+    { all: 0, upcoming: 0, overdue: 0, completed: 0 },
+    false
+  )
 
-    // Date range filter
-    let matchesDateRange = true
-    if (dateRange?.from && showDateFilter) {
-      const itemDate = parseISO(item.dueDate)
+  const { data: listResponse, loading: listLoading, error: listError, execute: fetchList } = useApi<MaintenanceListResponse>(
+    () => maintenanceService.getList(buildListParams()),
+    {
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 1
+    },
+    false
+  )
+
+  // Build params for list API
+  const buildListParams = () => {
+    const params: any = {
+      page: currentPage,
+      page_size: itemsPerPage,
+    }
+
+    if (statusFilter !== "all") {
+      params.status = statusFilter
+    }
+
+    if (typeFilter !== "all") {
+      params.type = typeFilter
+    }
+
+    if (priorityFilter !== "all") {
+      params.priority = priorityFilter
+    }
+
+    if (assignedToFilter !== null) {
+      params.assigned_to = assignedToFilter
+    }
+
+    if (searchQuery) {
+      params.search = searchQuery
+    }
+
+    if (showDateFilter && dateRange?.from) {
+      params.due_date_from = format(dateRange.from, "yyyy-MM-dd")
       if (dateRange.to) {
-        matchesDateRange = isWithinInterval(itemDate, {
-          start: dateRange.from,
-          end: dateRange.to,
-        })
-      } else {
-        // If only "from" date is selected
-        matchesDateRange = itemDate >= dateRange.from
+        params.due_date_to = format(dateRange.to, "yyyy-MM-dd")
       }
     }
 
-    return matchesSearch && matchesStatus && matchesType && matchesDateRange
-  })
+    return params
+  }
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchCounts().catch(err => console.error('Error fetching counts:', err))
+  }, [])
+
+  // Fetch list when filters change
+  useEffect(() => {
+    fetchList().catch(err => console.error('Error fetching maintenance tasks:', err))
+  }, [currentPage, itemsPerPage, statusFilter, typeFilter, priorityFilter, assignedToFilter, showDateFilter, dateRange])
+
+  // Map API maintenance task to UI model
+  const mapToUiMaintenanceTask = (item: MaintenanceTaskItem): UiMaintenanceTask => {
+    return {
+      id: item.id.toString(),
+      equipmentId: item.equipment_id.toString(),
+      equipmentType: item.equipment.type_name || "Unknown Type",
+      maintenanceType: item.maintenance_type,
+      dueDate: item.due_date,
+      status: item.status || item.category || "upcoming",
+      assignedTo: item.assigned_to ? `User ID: ${item.assigned_to}` : "Unassigned",
+      priority: item.priority.toLowerCase(),
+      type: item.type
+    };
+  }
+
+  // Map API maintenance tasks to UI model
+  const displayTasks = listResponse?.items.map(mapToUiMaintenanceTask) || []
+
+  // Loading state
+  const isLoading = countsLoading || listLoading
 
   return (
     <DesktopLayout>
@@ -156,101 +163,230 @@ export default function MaintenanceSchedule() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Maintenance Schedule</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}>
-              {viewMode === "list" ? (
-                <>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Calendar View
-                </>
-              ) : (
-                <>
-                  <List className="mr-2 h-4 w-4" />
-                  List View
-                </>
-              )}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button onClick={() => setShowScheduleModal(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Schedule Maintenance
-            </Button>
+            {calendarViewEnabled && (
+              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}>
+                {viewMode === "list" ? (
+                  <>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Calendar View
+                  </>
+                ) : (
+                  <>
+                    <List className="mr-2 h-4 w-4" />
+                    List View
+                  </>
+                )}
+              </Button>
+            )}
+            {exportDataEnabled && (
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            )}
+            {scheduleMaintenanceEnabled && (
+              <Button onClick={() => setShowScheduleModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Schedule Maintenance
+              </Button>
+            )}
           </div>
         </div>
 
         <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Maintenance Tasks</CardTitle>
-              <CardDescription>View and manage scheduled and unscheduled maintenance</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Maintenance Tasks</CardTitle>
+                <CardDescription>View and manage scheduled and unscheduled maintenance</CardDescription>
+              </div>
+              {isLoading && (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span className="text-xs text-muted-foreground">Loading...</span>
+                </div>
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDateFilter(!showDateFilter)}
-              className={showDateFilter ? "bg-blue-50" : ""}
-            >
-              <CalendarRange className="mr-2 h-4 w-4" />
-              Date Filter {showDateFilter ? "(On)" : "(Off)"}
-            </Button>
+            {(countsError || listError) && (
+              <div className="mt-2 text-sm text-red-500">Error loading maintenance data. Please try again.</div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Tabs defaultValue="all" className="w-full">
-                <TabsList>
-                  <TabsTrigger value="all">All Tasks ({maintenanceData.length})</TabsTrigger>
-                  <TabsTrigger value="upcoming">
-                    Upcoming ({maintenanceData.filter((item) => item.status === "upcoming").length})
-                  </TabsTrigger>
-                  <TabsTrigger value="overdue">
-                    Overdue ({maintenanceData.filter((item) => item.status === "overdue").length})
-                  </TabsTrigger>
-                  <TabsTrigger value="completed">
-                    Completed ({maintenanceData.filter((item) => item.status === "completed").length})
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div>
+                <Tabs defaultValue="all" value={currentView} onValueChange={(value) => {
+                  setCurrentView(value);
+                  setCurrentPage(1);
+                  setStatusFilter(value);
+                }}>
+                  <TabsList>
+                    {isLoading ? (
+                      // Skeleton loading for tabs
+                      <>
+                        <TabsTrigger value="all" disabled>
+                          All Tasks (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="upcoming" disabled>
+                          Upcoming (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="overdue" disabled>
+                          Overdue (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="completed" disabled>
+                          Completed (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                      </>
+                    ) : (
+                      <>
+                        <TabsTrigger value="all">All Tasks ({counts?.all || 0})</TabsTrigger>
+                        <TabsTrigger value="upcoming">Upcoming ({counts?.upcoming || 0})</TabsTrigger>
+                        <TabsTrigger value="overdue">Overdue ({counts?.overdue || 0})</TabsTrigger>
+                        <TabsTrigger value="completed">Completed ({counts?.completed || 0})</TabsTrigger>
+                      </>
+                    )}
+                  </TabsList>
+                </Tabs>
+
+                {/* Active filters indicators */}
+                {!isLoading && (statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all' || assignedToFilter !== null) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <div className="text-xs text-muted-foreground">Active filters:</div>
+
+                    {/* Status filter badge */}
+                    {statusFilter !== 'all' && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          statusFilter === "upcoming"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : statusFilter === "overdue"
+                              ? "bg-red-50 text-red-700 border-red-200"
+                              : "bg-green-50 text-green-700 border-green-200"
+                        }
+                      >
+                        Status: {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={() => {
+                            setStatusFilter('all');
+                            setCurrentView('all');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
+
+                    {/* Type filter badge */}
+                    {typeFilter !== 'all' && (
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-50 text-purple-700 border-purple-200"
+                      >
+                        Type: {typeFilter}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={() => {
+                            setTypeFilter('all');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
+
+                    {/* Priority filter badge */}
+                    {priorityFilter !== 'all' && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          priorityFilter === "high"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : priorityFilter === "medium"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-green-50 text-green-700 border-green-200"
+                        }
+                      >
+                        Priority: {priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={() => {
+                            setPriorityFilter('all');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex w-full items-center gap-2 md:w-auto">
+                <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
                   <div className="relative w-full md:w-[300px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="search"
-                      placeholder="Search equipment..."
+                      placeholder={isLoading ? "Loading maintenance data..." : "Search maintenance tasks..."}
                       className="pl-8"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      disabled={isLoading}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="Scheduled">Scheduled</SelectItem>
-                        <SelectItem value="Unscheduled">Unscheduled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                  {dateRangeFilterEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={showDateFilter ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowDateFilter(!showDateFilter)}
+                        disabled={isLoading}
+                      >
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        {showDateFilter ? "Date Filter (On)" : "Date Filter"}
+                      </Button>
+
+                      {showDateFilter && (
+                        <Button variant="ghost" size="icon" onClick={() => setShowDateFilter(false)} className="h-8 w-8" type="button">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {advancedFiltersEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Select value={typeFilter} onValueChange={setTypeFilter} disabled={isLoading}>
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="unscheduled">Unscheduled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={priorityFilter} onValueChange={setPriorityFilter} disabled={isLoading}>
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue placeholder="Priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Priorities</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -276,45 +412,75 @@ export default function MaintenanceSchedule() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredData.length > 0 ? (
-                        filteredData.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.id}</TableCell>
+                      {isLoading ? (
+                        // Loading skeleton
+                        Array(5).fill(0).map((_, index) => (
+                          <TableRow key={`skeleton-${index}`}>
                             <TableCell>
-                              {item.equipmentId}
-                              <div className="text-xs text-muted-foreground">{item.equipmentType}</div>
+                              <div className="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
                             </TableCell>
-                            <TableCell>{item.maintenanceType}</TableCell>
-                            <TableCell>{new Date(item.dueDate).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                              <div className="h-3 w-20 mt-1 animate-pulse rounded bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-20 animate-pulse rounded bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-6 w-16 animate-pulse rounded-full bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-8 w-16 animate-pulse rounded bg-gray-200"></div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : displayTasks.length > 0 ? (
+                        displayTasks.map((task) => (
+                          <TableRow key={task.id}>
+                            <TableCell className="font-medium">{task.id}</TableCell>
+                            <TableCell className="font-medium">
+                             {task.equipmentType}
+                            </TableCell>
+                            <TableCell>{task.type}</TableCell>
+                            <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
                                 className={
-                                  item.status === "upcoming"
+                                  task.status === "upcoming"
                                     ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : item.status === "overdue"
+                                    : task.status === "overdue"
                                       ? "bg-red-50 text-red-700 border-red-200"
                                       : "bg-green-50 text-green-700 border-green-200"
                                 }
                               >
-                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
                                 className={
-                                  item.priority === "high"
+                                  task.priority === "high"
                                     ? "bg-red-50 text-red-700 border-red-200"
-                                    : item.priority === "medium"
+                                    : task.priority === "medium"
                                       ? "bg-amber-50 text-amber-700 border-amber-200"
                                       : "bg-green-50 text-green-700 border-green-200"
                                 }
                               >
-                                {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+                                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                               </Badge>
                             </TableCell>
-                            <TableCell>{item.assignedTo}</TableCell>
+                            <TableCell>{task.assignedTo}</TableCell>
                             <TableCell>
                               <Button variant="outline" size="sm">
                                 View
@@ -333,14 +499,47 @@ export default function MaintenanceSchedule() {
                   </Table>
                 </div>
               ) : (
-                <MaintenanceCalendarView maintenanceData={filteredData} />
+                <MaintenanceCalendarView maintenanceData={displayTasks} />
+              )}
+
+              {/* Pagination */}
+              {!isLoading && listResponse && listResponse.total_pages > 1 && (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(listResponse.page - 1) * listResponse.page_size + 1} to{" "}
+                    {Math.min(listResponse.page * listResponse.page_size, listResponse.total)} of {listResponse.total} items
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="text-sm">
+                      Page {listResponse.page} of {listResponse.total_pages}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, listResponse.total_pages))}
+                      disabled={currentPage === listResponse.total_pages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <ScheduleMaintenanceModal open={showScheduleModal} onOpenChange={setShowScheduleModal} />
+      {scheduleMaintenanceEnabled && (
+        <ScheduleMaintenanceModal open={showScheduleModal} onOpenChange={setShowScheduleModal} />
+      )}
     </DesktopLayout>
   )
 }
