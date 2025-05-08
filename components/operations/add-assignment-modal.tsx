@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { assignmentService, CreateAssignmentPayload } from "@/lib/services/assignment-service"
 
 // Import sample data
 import userData from "@/data/user.json"
@@ -99,30 +100,44 @@ export function AddAssignmentModal({ open, onOpenChange }: AddAssignmentModalPro
   const handleSubmit = async () => {
     setIsSubmitting(true)
 
-    // Create payload
-    const payload = {
-      equipment_id: formData.equipment_id,
-      assigned_to: formData.assigned_to,
-      flight_id: formData.flight_id,
-      gate_id: formData.gate_id,
-      task_type: formData.task_type,
-      priority: formData.priority,
-      start_time: formData.start_time.toISOString(),
-      end_time: formData.end_time.toISOString(),
+    try {
+      // Create payload
+      const payload: CreateAssignmentPayload = {
+        equipment_id: formData.equipment_id,
+        assigned_to: formData.assigned_to,
+        flight_id: formData.flight_id,
+        gate_id: formData.gate_id,
+        task_type: formData.task_type,
+        priority: formData.priority,
+        start_time: formData.start_time.toISOString(),
+        end_time: formData.end_time.toISOString(),
+      }
+
+      console.log("Assignment payload:", payload)
+
+      // Call the assignment service to create the assignment
+      const response = await assignmentService.create(payload)
+
+      console.log("Assignment created:", response)
+
+      toast({
+        title: "Assignment Created",
+        description: "The new assignment has been successfully created.",
+      })
+
+      setIsSubmitting(false)
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Error creating assignment:", error)
+
+      toast({
+        title: "Error",
+        description: "Failed to create assignment. Please try again.",
+        variant: "destructive",
+      })
+
+      setIsSubmitting(false)
     }
-
-    console.log("Assignment payload:", payload)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    toast({
-      title: "Assignment Created",
-      description: "The new assignment has been successfully created.",
-    })
-
-    setIsSubmitting(false)
-    onOpenChange(false)
   }
 
   return (
@@ -291,7 +306,6 @@ export function AddAssignmentModal({ open, onOpenChange }: AddAssignmentModalPro
                     mode="single"
                     selected={formData.start_time}
                     onSelect={(date) => date && handleChange("start_time", date)}
-                    initialFocus
                   />
                   <div className="p-3 border-t border-border">
                     <div className="flex flex-col space-y-2">
@@ -338,7 +352,6 @@ export function AddAssignmentModal({ open, onOpenChange }: AddAssignmentModalPro
                     mode="single"
                     selected={formData.end_time}
                     onSelect={(date) => date && handleChange("end_time", date)}
-                    initialFocus
                   />
                   <div className="p-3 border-t border-border">
                     <div className="flex flex-col space-y-2">
