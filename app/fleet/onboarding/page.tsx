@@ -845,7 +845,7 @@ export default function EquipmentOnboarding() {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="maintenanceInterval">Maintenance Interval (Days) *</Label>
                       <Input
                         id="maintenanceInterval"
@@ -857,7 +857,7 @@ export default function EquipmentOnboarding() {
                         placeholder="Enter maintenance interval in days"
                         required
                       />
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
                       <Label htmlFor="lastMaintenanceDate">Last Maintenance Date</Label>
