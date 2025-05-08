@@ -356,8 +356,8 @@ export default function FleetInventory() {
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-0">
+            {/* <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Equipment Inventory</CardTitle>
                 <CardDescription>Manage and monitor all ground service equipment in the fleet</CardDescription>
@@ -368,7 +368,7 @@ export default function FleetInventory() {
                   <span className="text-xs text-muted-foreground">Loading...</span>
                 </div>
               )}
-            </div>
+            </div> */}
             {(countsError || listError) && (
               <div className="mt-2 text-sm text-red-500">Error loading equipment data. Please try again.</div>
             )}
@@ -462,7 +462,7 @@ export default function FleetInventory() {
 
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
-                  <div className="relative w-full md:w-[300px]">
+                  {/* <div className="relative w-full md:w-[300px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="search"
@@ -472,7 +472,7 @@ export default function FleetInventory() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       disabled={isLoading}
                     />
-                  </div>
+                  </div> */}
 
                   {/* Date Range Picker */}
                   {dateRangeFilterEnabled && (

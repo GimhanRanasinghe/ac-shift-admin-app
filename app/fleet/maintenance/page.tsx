@@ -194,8 +194,8 @@ export default function MaintenanceSchedule() {
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-0">
+            {/* <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Maintenance Tasks</CardTitle>
                 <CardDescription>View and manage scheduled and unscheduled maintenance</CardDescription>
@@ -206,7 +206,7 @@ export default function MaintenanceSchedule() {
                   <span className="text-xs text-muted-foreground">Loading...</span>
                 </div>
               )}
-            </div>
+            </div> */}
             {(countsError || listError) && (
               <div className="mt-2 text-sm text-red-500">Error loading maintenance data. Please try again.</div>
             )}

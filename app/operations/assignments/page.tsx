@@ -372,20 +372,20 @@ export default function OperatorAssignments() {
         </div>
 
         <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          {/* <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="list">List View</TabsTrigger>
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          </TabsList>
+          </TabsList> */}
           <TabsContent value="list" className="mt-4">
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-0">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <CardTitle>Operator Assignments</CardTitle>
-                    <CardDescription>Manage equipment assignments for ground service operators</CardDescription>
+                    {/* <CardTitle>Operator Assignments</CardTitle> */}
+                    {/* <CardDescription>Manage equipment assignments for ground service operators</CardDescription> */}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {/* <Select defaultValue="all" onValueChange={setDateFilter}>
+                  {/* <div className="flex flex-wrap gap-2">
+                     <Select defaultValue="all" onValueChange={setDateFilter}>
                       <SelectTrigger className="w-[140px]">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Date" />
@@ -396,9 +396,9 @@ export default function OperatorAssignments() {
                         <SelectItem value="tomorrow">Tomorrow</SelectItem>
                         <SelectItem value="thisWeek">This Week</SelectItem>
                       </SelectContent>
-                    </Select> */}
+                    </Select> 
 
-                    {/* {dateRangeFilterEnabled && (
+                     {dateRangeFilterEnabled && (
                       <div className="flex items-center gap-2">
                         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                           <PopoverTrigger asChild>
@@ -547,8 +547,8 @@ export default function OperatorAssignments() {
                           </Button>
                         )}
                       </div>
-                    )} */}
-                  </div>
+                    )} 
+                  </div> */}
                 </div>
               </CardHeader>
               <CardContent>
