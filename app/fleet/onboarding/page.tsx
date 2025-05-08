@@ -229,11 +229,21 @@ export default function EquipmentOnboarding() {
   }
 
   const handleNext = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 4))
+    if (currentStep === 2 && isPowered() && !equipmentData.hasTelematicsDevice) {
+      // Skip step 3 (Additional Sensors) if Telematics Device is not selected
+      setCurrentStep(4)
+    } else {
+      setCurrentStep((prev) => Math.min(prev + 1, 4))
+    }
   }
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1))
+    if (currentStep === 4 && isPowered() && !equipmentData.hasTelematicsDevice) {
+      // Skip step 3 (Additional Sensors) when going back if Telematics Device is not selected
+      setCurrentStep(2)
+    } else {
+      setCurrentStep((prev) => Math.max(prev - 1, 1))
+    }
   }
 
   // Map form data to API equipment model
@@ -589,40 +599,6 @@ export default function EquipmentOnboarding() {
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-amber-100 rounded-full">
-                            <Gauge className="h-5 w-5 text-amber-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasLevelSensor">Level Sensor</Label>
-                            <p className="text-sm text-muted-foreground">Fuel/fluid level monitoring</p>
-                          </div>
-                        </div>
-                        <Switch
-                          id="hasLevelSensor"
-                          checked={equipmentData.hasLevelSensor}
-                          onCheckedChange={(checked) => handleInputChange("hasLevelSensor", checked)}
-                        />
-                      </div>
-
-                      {equipmentData.hasLevelSensor && (
-                        <div className="ml-12 p-4 border rounded-lg space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="levelSensorSerialNumber">Level Sensor Serial Number *</Label>
-                            <Input
-                              id="levelSensorSerialNumber"
-                              value={equipmentData.levelSensorSerialNumber}
-                              onChange={(e) => handleInputChange("levelSensorSerialNumber", e.target.value)}
-                              placeholder="Enter level sensor serial number"
-                              required
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <Separator />
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
                           <div className="p-2 bg-purple-100 rounded-full">
                             <Camera className="h-5 w-5 text-purple-600" />
                           </div>
@@ -693,7 +669,7 @@ export default function EquipmentOnboarding() {
                 </div>
               )}
 
-              {currentStep === 3 && isPowered() && (
+              {currentStep === 3 && isPowered() && equipmentData.hasTelematicsDevice && (
                 <div className="space-y-6">
                   <div className="p-4 bg-gray-900 rounded-lg border border-gray-800 mb-6">
                     <h3 className="font-medium text-gray-100 mb-2">Additional Sensors</h3>
@@ -771,7 +747,7 @@ export default function EquipmentOnboarding() {
                       </div>
                     )}
 
-                    <Separator />
+                    {/* <Separator />
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -790,7 +766,7 @@ export default function EquipmentOnboarding() {
                         checked={equipmentData.hasAiDashcam}
                         onCheckedChange={(checked) => handleInputChange("hasAiDashcam", checked)}
                       />
-                    </div>
+                    </div> */}
 
                     {equipmentData.hasAiDashcam && (
                       <div className="ml-12 space-y-4">
