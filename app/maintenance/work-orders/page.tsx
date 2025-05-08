@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Search, Download, Plus, Filter } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreateWorkOrderModal } from "@/components/maintenance/create-work-order-modal"
 
 // Sample work orders data
 const workOrdersData = [
@@ -85,6 +86,7 @@ export default function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   // Filter work orders based on search and filters
   const filteredData = workOrdersData.filter((item) => {
@@ -110,7 +112,7 @@ export default function WorkOrders() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Work Order
             </Button>
@@ -240,6 +242,9 @@ export default function WorkOrders() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Create Work Order Modal */}
+      <CreateWorkOrderModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
     </DesktopLayout>
   )
 }
