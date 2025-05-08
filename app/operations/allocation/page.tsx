@@ -46,7 +46,7 @@ export default function ResourceAllocation() {
   const [viewMode, setViewMode] = useState("map")
   const [searchQuery, setSearchQuery] = useState("")
   const [equipmentFilter, setEquipmentFilter] = useState("all")
-  
+
   // Sample optimization results
   const optimizationResults = {
     score: {
@@ -112,24 +112,24 @@ export default function ResourceAllocation() {
       ],
     },
   }
-  
+
   const handleStartOptimization = () => {
     setOptimizationStatus("running")
-    
+
     // Simulate optimization process
     setTimeout(() => {
       setOptimizationStatus("completed")
     }, 3000)
   }
-  
+
   const handleStopOptimization = () => {
     setOptimizationStatus("idle")
   }
-  
+
   const handleResetOptimization = () => {
     setOptimizationStatus("idle")
   }
-  
+
   return (
     <DesktopLayout>
       <div className="space-y-6">
@@ -154,7 +154,7 @@ export default function ResourceAllocation() {
             </Button>
           </div>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -219,7 +219,7 @@ export default function ResourceAllocation() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Available Equipment</CardTitle>
@@ -229,8 +229,8 @@ export default function ResourceAllocation() {
               <p className="text-xs text-muted-foreground">Out of {equipment.length} total equipment</p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500" 
+                  <div
+                    className="h-full bg-green-500"
                     style={{ width: `${(equipment.filter(e => e.status === "Available").length / equipment.length) * 100}%` }}
                   ></div>
                 </div>
@@ -240,7 +240,7 @@ export default function ResourceAllocation() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Tasks</CardTitle>
@@ -253,8 +253,8 @@ export default function ResourceAllocation() {
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500" 
+                  <div
+                    className="h-full bg-green-500"
                     style={{ width: `${(38 / 42) * 100}%` }}
                   ></div>
                 </div>
@@ -264,7 +264,7 @@ export default function ResourceAllocation() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Optimization Metrics</CardTitle>
@@ -291,7 +291,7 @@ export default function ResourceAllocation() {
             </CardContent>
           </Card>
         </div>
-        
+
         <Card>
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
@@ -347,7 +347,7 @@ export default function ResourceAllocation() {
                   </Button>
                 </div>
               </div>
-              
+
               {viewMode === "list" && (
                 <div className="space-y-4">
                   {optimizationResults.routes.map((route) => (
@@ -392,7 +392,7 @@ export default function ResourceAllocation() {
                       </CardContent>
                     </Card>
                   ))}
-                  
+
                   {optimizationResults.unassignedTasks.length > 0 && (
                     <Card className="border-red-200">
                       <CardHeader className="pb-2 bg-red-50">
@@ -437,7 +437,7 @@ export default function ResourceAllocation() {
                   )}
                 </div>
               )}
-              
+
               {viewMode === "map" && (
                 <div className="h-[500px] bg-muted rounded-md flex items-center justify-center">
                   <div className="text-center">
@@ -447,7 +447,7 @@ export default function ResourceAllocation() {
                   </div>
                 </div>
               )}
-              
+
               {viewMode === "gantt" && (
                 <div className="h-[500px] bg-muted rounded-md flex items-center justify-center">
                   <div className="text-center">
@@ -460,7 +460,7 @@ export default function ResourceAllocation() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Optimization Constraints</CardTitle>
@@ -488,13 +488,24 @@ export default function ResourceAllocation() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium mb-2">Soft Constraints</h3>
                 <div className="space-y-2">
                   {optimizationResults.constraints.penalized.map((constraint, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-md">
-                      <span>{constraint.description
-
-\
-Let's create a loading state for the allocation page:
+                      <span>{constraint.description}</span>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Score: {constraint.score}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DesktopLayout>
+  )
+}
