@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { CalendarIcon, Clock } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -74,6 +74,9 @@ interface AddAssignmentModalProps {
 }
 
 export function AddAssignmentModal({ open, onOpenChange }: AddAssignmentModalProps) {
+  // Get toast function
+  const { toast } = useToast()
+
   // Form state
   const [formData, setFormData] = useState({
     equipment_id: 0,

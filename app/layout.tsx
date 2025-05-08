@@ -9,6 +9,7 @@ import { ApiProvider } from "@/components/api-provider"
 import { AuthProvider } from "@/context/auth-context"
 import { cn } from "@/lib/utils"
 import { fontSans } from "@/lib/fonts"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "Air Canada GSE",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </AuthProvider>
           </ApiProvider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   )
