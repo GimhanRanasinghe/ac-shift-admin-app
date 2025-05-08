@@ -23,15 +23,19 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  Calendar,
-  Clock,
+  Calendar as CalendarIcon,
   Truck,
-  Users,
+  X,
+  Clock,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 // API hooks and services
 import { useApi } from "@/hooks/use-api"
@@ -94,9 +98,26 @@ export default function OperatorAssignments() {
   // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [currentView, setCurrentView] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [itemsPerPage] = useState(10)
+
+  // State for date range filter
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined
+    to: Date | undefined
+  }>({
+    from: undefined,
+    to: undefined,
+  })
+  const [startTime, setStartTime] = useState("00:00")
+  const [endTime, setEndTime] = useState("23:59")
+  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+
+  // Feature flags
+  const dateRangeFilterEnabled = true
 
   // State for modals
   const [selectedAssignment, setSelectedAssignment] = useState<UiAssignment | null>(null)
@@ -162,6 +183,23 @@ export default function OperatorAssignments() {
       }
     }
 
+    // Add date range filter if active
+    if (showDateFilter && dateRange.from && dateRange.to) {
+      // Create dates with time
+      const fromDate = new Date(dateRange.from)
+      const toDate = new Date(dateRange.to)
+
+      // Apply time to dates
+      const [startHours, startMinutes] = startTime.split(':')
+      const [endHours, endMinutes] = endTime.split(':')
+
+      fromDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0)
+      toDate.setHours(parseInt(endHours), parseInt(endMinutes), 59, 999)
+
+      params.start_time_from = format(fromDate, "yyyy-MM-dd'T'HH:mm:ss")
+      params.start_time_to = format(toDate, "yyyy-MM-dd'T'HH:mm:ss")
+    }
+
     return params
   }
 
@@ -173,7 +211,12 @@ export default function OperatorAssignments() {
   // Fetch list when filters change
   useEffect(() => {
     fetchList().catch(err => console.error('Error fetching assignments:', err))
-  }, [currentPage, itemsPerPage, statusFilter, dateFilter, searchQuery])
+  }, [currentPage, itemsPerPage, statusFilter, dateFilter, searchQuery, showDateFilter, dateRange])
+
+  // Update currentView when statusFilter changes
+  useEffect(() => {
+    setCurrentView(statusFilter)
+  }, [statusFilter])
 
   // Map API assignment to UI model
   const mapToUiAssignment = (item: AssignmentListItem): UiAssignment => {
@@ -196,6 +239,78 @@ export default function OperatorAssignments() {
       actualEndTime: item.actual_end_time ? format(new Date(item.actual_end_time), "yyyy-MM-dd HH:mm") : undefined,
     };
   }
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    console.log(`Tab changed to: ${value}`);
+    setCurrentView(value);
+
+    // Reset to page 1 when changing tabs
+    setCurrentPage(1);
+
+    // Update status filter based on selected tab
+    switch (value) {
+      case 'all':
+        setStatusFilter('all');
+        break;
+      case 'scheduled':
+        setStatusFilter('scheduled');
+        break;
+      case 'active':
+        setStatusFilter('active');
+        break;
+      case 'completed':
+        setStatusFilter('completed');
+        break;
+      case 'cancelled':
+        setStatusFilter('cancelled');
+        break;
+      default:
+        setStatusFilter('all');
+    }
+  }
+
+  // Reset date filter
+  const resetDateFilter = () => {
+    setDateRange({ from: undefined, to: undefined })
+    setShowDateFilter(false)
+  }
+
+  // Apply date filter
+  const applyDateFilter = () => {
+    if (dateRange.from && dateRange.to) {
+      setShowDateFilter(true)
+      setIsCalendarOpen(false)
+    }
+  }
+
+  // Set preset date ranges
+  const setPresetDateRange = (days: number) => {
+    const today = new Date()
+    const pastDate = new Date()
+    pastDate.setDate(today.getDate() - days)
+
+    setDateRange({
+      from: pastDate,
+      to: today,
+    })
+  }
+
+  // Generate time options in 30-minute intervals
+  const generateTimeOptions = () => {
+    const options = []
+    for (let hour = 0; hour < 24; hour++) {
+      for (const minute of [0, 30]) {
+        const formattedHour = hour.toString().padStart(2, "0")
+        const formattedMinute = minute.toString().padStart(2, "0")
+        options.push(`${formattedHour}:${formattedMinute}`)
+      }
+    }
+    return options
+  }
+
+  // Time options for select dropdown
+  const timeOptions = generateTimeOptions()
 
   // Map API assignments to UI model
   const displayAssignments = listResponse?.items.map(mapToUiAssignment) || []
@@ -264,9 +379,9 @@ export default function OperatorAssignments() {
                     <CardDescription>Manage equipment assignments for ground service operators</CardDescription>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Select defaultValue="all" onValueChange={setDateFilter}>
+                    {/* <Select defaultValue="all" onValueChange={setDateFilter}>
                       <SelectTrigger className="w-[140px]">
-                        <Calendar className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Date" />
                       </SelectTrigger>
                       <SelectContent>
@@ -275,49 +390,354 @@ export default function OperatorAssignments() {
                         <SelectItem value="tomorrow">Tomorrow</SelectItem>
                         <SelectItem value="thisWeek">This Week</SelectItem>
                       </SelectContent>
-                    </Select>
-                    <Select defaultValue="all" onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="active">Active ({counts?.active || 0})</SelectItem>
-                        <SelectItem value="scheduled">Scheduled ({counts?.scheduled || 0})</SelectItem>
-                        <SelectItem value="completed">Completed ({counts?.completed || 0})</SelectItem>
-                        {counts?.cancelled && counts.cancelled > 0 && (
-                          <SelectItem value="cancelled">Cancelled ({counts.cancelled})</SelectItem>
+                    </Select> */}
+
+                    {/* {dateRangeFilterEnabled && (
+                      <div className="flex items-center gap-2">
+                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={showDateFilter ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "justify-start text-left font-normal",
+                                !dateRange.from && !dateRange.to && "text-muted-foreground",
+                              )}
+                              onClick={() => setIsCalendarOpen(true)}
+                              type="button"
+                              disabled={isLoading}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dateRange.from && dateRange.to ? (
+                                <>
+                                  {format(dateRange.from, "MMM d, yyyy")} {startTime} - {format(dateRange.to, "MMM d, yyyy")} {endTime}
+                                </>
+                              ) : (
+                                <span>Date & Time Range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-3 border-b">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Filter by start date</h4>
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => {
+                                      const today = new Date()
+                                      setDateRange({
+                                        from: today,
+                                        to: today,
+                                      })
+                                    }}
+                                  >
+                                    Today
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(7)}
+                                  >
+                                    Last 7 days
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(30)}
+                                  >
+                                    Last 30 days
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(90)}
+                                  >
+                                    Last 90 days
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <Calendar
+                              mode="range"
+                              selected={{
+                                from: dateRange.from,
+                                to: dateRange.to,
+                              }}
+                              onSelect={(range) => {
+                                setDateRange({
+                                  from: range?.from,
+                                  to: range?.to,
+                                })
+                              }}
+                              numberOfMonths={1}
+                              defaultMonth={dateRange.from || new Date()}
+                              showOutsideDays={true}
+                              fixedWeeks={true}
+                              ISOWeek={false}
+                              captionLayout="dropdown"
+                            />
+                            <div className="border-t border-border p-3 space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">Time Range</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Start Time</Label>
+                                  <Select value={startTime} onValueChange={setStartTime}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Start time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions.map((time) => (
+                                        <SelectItem key={`start-${time}`} value={time}>
+                                          {time}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">End Time</Label>
+                                  <Select value={endTime} onValueChange={setEndTime}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="End time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions.map((time) => (
+                                        <SelectItem key={`end-${time}`} value={time}>
+                                          {time}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-3 border-t flex justify-between">
+                              <Button variant="ghost" size="sm" type="button" onClick={resetDateFilter}>
+                                Reset
+                              </Button>
+                              <Button size="sm" type="button" onClick={applyDateFilter}>
+                                Apply
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {showDateFilter && (
+                          <Button variant="ghost" size="icon" onClick={resetDateFilter} className="h-8 w-8" type="button">
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )} */}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  <div>
+                    <Tabs defaultValue="all" value={currentView} onValueChange={handleTabChange}>
+                      <TabsList>
+                        {isLoading ? (
+                          // Skeleton loading for tabs
+                          <>
+                            <TabsTrigger value="all" disabled>
+                              All Assignments (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                            </TabsTrigger>
+                            <TabsTrigger value="scheduled" disabled>
+                              Scheduled (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                            </TabsTrigger>
+                            <TabsTrigger value="active" disabled>
+                              Active (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                            </TabsTrigger>
+                            <TabsTrigger value="completed" disabled>
+                              Completed (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                            </TabsTrigger>
+                            {counts?.cancelled && counts.cancelled > 0 && (
+                              <TabsTrigger value="cancelled" disabled>
+                                Cancelled (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                              </TabsTrigger>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <TabsTrigger value="all">All Assignments ({counts?.total || 0})</TabsTrigger>
+                            <TabsTrigger value="scheduled">Scheduled ({counts?.scheduled || 0})</TabsTrigger>
+                            <TabsTrigger value="active">Active ({counts?.active || 0})</TabsTrigger>
+                            <TabsTrigger value="completed">Completed ({counts?.completed || 0})</TabsTrigger>
+                            {counts?.cancelled && counts.cancelled > 0 && (
+                              <TabsTrigger value="cancelled">Cancelled ({counts.cancelled})</TabsTrigger>
+                            )}
+                          </>
+                        )}
+                      </TabsList>
+                    </Tabs>
+                  </div>
+
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex w-full items-center gap-2 md:w-auto">
-                      <div className="relative w-full md:w-[300px]">
-                        {isLoading ? (
-                          <div className="absolute left-2.5 top-2.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                        ) : (
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      {dateRangeFilterEnabled && (
+                      <div className="flex items-center gap-2">
+                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={showDateFilter ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "justify-start text-left font-normal",
+                                !dateRange.from && !dateRange.to && "text-muted-foreground",
+                              )}
+                              onClick={() => setIsCalendarOpen(true)}
+                              type="button"
+                              disabled={isLoading}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dateRange.from && dateRange.to ? (
+                                <>
+                                  {format(dateRange.from, "MMM d, yyyy")} {startTime} - {format(dateRange.to, "MMM d, yyyy")} {endTime}
+                                </>
+                              ) : (
+                                <span>Date & Time Range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-3 border-b">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Filter by start date</h4>
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => {
+                                      const today = new Date()
+                                      setDateRange({
+                                        from: today,
+                                        to: today,
+                                      })
+                                    }}
+                                  >
+                                    Today
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(7)}
+                                  >
+                                    Last 7 days
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(30)}
+                                  >
+                                    Last 30 days
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs"
+                                    type="button"
+                                    onClick={() => setPresetDateRange(90)}
+                                  >
+                                    Last 90 days
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <Calendar
+                              mode="range"
+                              selected={{
+                                from: dateRange.from,
+                                to: dateRange.to,
+                              }}
+                              onSelect={(range) => {
+                                setDateRange({
+                                  from: range?.from,
+                                  to: range?.to,
+                                })
+                              }}
+                              numberOfMonths={1}
+                              defaultMonth={dateRange.from || new Date()}
+                              showOutsideDays={true}
+                              fixedWeeks={true}
+                              ISOWeek={false}
+                              captionLayout="dropdown"
+                            />
+                            <div className="border-t border-border p-3 space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">Time Range</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Start Time</Label>
+                                  <Select value={startTime} onValueChange={setStartTime}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Start time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions.map((time) => (
+                                        <SelectItem key={`start-${time}`} value={time}>
+                                          {time}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">End Time</Label>
+                                  <Select value={endTime} onValueChange={setEndTime}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="End time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {timeOptions.map((time) => (
+                                        <SelectItem key={`end-${time}`} value={time}>
+                                          {time}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-3 border-t flex justify-between">
+                              <Button variant="ghost" size="sm" type="button" onClick={resetDateFilter}>
+                                Reset
+                              </Button>
+                              <Button size="sm" type="button" onClick={applyDateFilter}>
+                                Apply
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {showDateFilter && (
+                          <Button variant="ghost" size="icon" onClick={resetDateFilter} className="h-8 w-8" type="button">
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
-                        <Input
-                          type="search"
-                          placeholder={isLoading ? "Loading assignments..." : "Search assignments..."}
-                          className="pl-8"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          disabled={isLoading}
-                        />
                       </div>
-                      <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon">
-                        <SlidersHorizontal className="h-4 w-4" />
-                      </Button>
+                    )}
                     </div>
                   </div>
 
@@ -513,7 +933,7 @@ export default function OperatorAssignments() {
               </CardHeader>
               <CardContent className="h-[600px] flex items-center justify-center">
                 <div className="text-center">
-                  <Calendar className="h-16 w-16 mx-auto text-muted-foreground" />
+                  <CalendarIcon className="h-16 w-16 mx-auto text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-medium">Calendar View</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Calendar view would display assignments in a daily, weekly, or monthly format.
