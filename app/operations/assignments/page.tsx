@@ -396,7 +396,7 @@ export default function OperatorAssignments() {
                         <SelectItem value="tomorrow">Tomorrow</SelectItem>
                         <SelectItem value="thisWeek">This Week</SelectItem>
                       </SelectContent>
-                    </Select> 
+                    </Select>
 
                      {dateRangeFilterEnabled && (
                       <div className="flex items-center gap-2">
@@ -547,7 +547,7 @@ export default function OperatorAssignments() {
                           </Button>
                         )}
                       </div>
-                    )} 
+                    )}
                   </div> */}
                 </div>
               </CardHeader>
@@ -1017,17 +1017,20 @@ export default function OperatorAssignments() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setIsViewModalOpen(false)}
         >
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">Assignment Details</h2>
-            <div className="space-y-3">
+          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full border border-border" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Assignment Details</h2>
+            <div className="space-y-3 text-foreground">
               <p>
                 <strong>Assignment ID:</strong> {selectedAssignment.id}
               </p>
               <p>
-                <strong>Operator:</strong> {selectedAssignment.operatorName} ({selectedAssignment.operatorId})
+                <strong>Operator:</strong> <span className="font-medium text-primary">{selectedAssignment.operatorName}</span> ({selectedAssignment.operatorId})
               </p>
               <p>
-                <strong>Equipment:</strong> {selectedAssignment.equipmentType} ({selectedAssignment.equipmentId})
+                <strong>Equipment:</strong> <span className="font-medium text-primary">{selectedAssignment.equipmentType}</span> ({selectedAssignment.equipmentId})
+              </p>
+              <p>
+                <strong>Model:</strong> <span className="font-medium text-primary">{selectedAssignment.equipmentModel}</span>
               </p>
               <p>
                 <strong>Start Time:</strong> {selectedAssignment.startTime}
@@ -1036,10 +1039,10 @@ export default function OperatorAssignments() {
                 <strong>End Time:</strong> {selectedAssignment.endTime}
               </p>
               <p>
-                <strong>Task Type:</strong> {selectedAssignment.taskType}
+                <strong>Task Type:</strong> <span className="font-medium text-primary">{selectedAssignment.taskType}</span>
               </p>
               <p>
-                <strong>Priority:</strong> {selectedAssignment.priority}
+                <strong>Priority:</strong> <span className="font-medium text-primary">{selectedAssignment.priority}</span>
               </p>
               {selectedAssignment.checkInTime && (
                 <p>
@@ -1102,9 +1105,9 @@ export default function OperatorAssignments() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setIsEditModalOpen(false)}
         >
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">Edit Assignment</h2>
-            <p className="mb-4">This would be an edit form for assignment {selectedAssignment.id}</p>
+          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full border border-border" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Edit Assignment</h2>
+            <p className="mb-4 text-foreground">This would be an edit form for assignment {selectedAssignment.id}</p>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                 Cancel
