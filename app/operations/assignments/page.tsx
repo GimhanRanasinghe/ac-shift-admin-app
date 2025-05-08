@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { DesktopLayout } from "@/components/desktop-layout"
+import { AddAssignmentModal } from "@/components/operations/add-assignment-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -66,6 +67,7 @@ export default function OperatorAssignments() {
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   // Filter assignments based on search and filters
   const filteredAssignments = assignmentsData.filter((assignment) => {
@@ -108,7 +110,7 @@ export default function OperatorAssignments() {
                 <DropdownMenuItem>Print</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button>
+            <Button onClick={() => setIsAddModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New Assignment
             </Button>
@@ -470,6 +472,9 @@ export default function OperatorAssignments() {
           </div>
         </div>
       )}
+
+      {/* Add Assignment Modal */}
+      <AddAssignmentModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
     </DesktopLayout>
   )
 }
