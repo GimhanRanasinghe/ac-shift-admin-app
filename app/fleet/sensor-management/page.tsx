@@ -142,17 +142,17 @@ export default function SensorManagement() {
       equipment.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       equipment.type.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesType = typeFilter === "all" || 
+    const matchesType = typeFilter === "all" ||
       (typeFilter === "powered" && equipment.powered) ||
       (typeFilter === "non-powered" && !equipment.powered)
 
-    const matchesSensor = sensorFilter === "all" || 
+    const matchesSensor = sensorFilter === "all" ||
       (sensorFilter === "telematics" && equipment.powered && equipment.sensors.telematics?.installed) ||
       (sensorFilter === "ble" && !equipment.powered && equipment.sensors.bleBeacon?.installed) ||
       (sensorFilter === "level" && equipment.powered && equipment.sensors.levelSensor?.installed) ||
       (sensorFilter === "temperature" && equipment.powered && equipment.sensors.temperatureSensor?.installed) ||
       (sensorFilter === "dashcam" && equipment.powered && equipment.sensors.aiDashcam?.installed) ||
-      (sensorFilter === "none" && ((equipment.powered && !equipment.sensors.telematics?.installed) || 
+      (sensorFilter === "none" && ((equipment.powered && !equipment.sensors.telematics?.installed) ||
                                   (!equipment.powered && !equipment.sensors.bleBeacon?.installed)))
 
     return matchesSearch && matchesType && matchesSensor
@@ -253,8 +253,8 @@ export default function SensorManagement() {
                             <div className="flex items-center gap-2">
                               <Wifi className={`h-4 w-4 ${equipment.sensors.telematics?.installed ? 'text-green-500' : 'text-gray-300'}`} />
                               <span>
-                                {equipment.sensors.telematics?.installed 
-                                  ? `${equipment.sensors.telematics.provider} Telematics` 
+                                {equipment.sensors.telematics?.installed
+                                  ? `${equipment.sensors.telematics.provider} Telematics`
                                   : "No Telematics"}
                               </span>
                             </div>
@@ -262,8 +262,8 @@ export default function SensorManagement() {
                             <div className="flex items-center gap-2">
                               <Bluetooth className={`h-4 w-4 ${equipment.sensors.bleBeacon?.installed ? 'text-blue-500' : 'text-gray-300'}`} />
                               <span>
-                                {equipment.sensors.bleBeacon?.installed 
-                                  ? `${equipment.sensors.bleBeacon.provider} BLE Beacon` 
+                                {equipment.sensors.bleBeacon?.installed
+                                  ? `${equipment.sensors.bleBeacon.provider} BLE Beacon`
                                   : "No BLE Beacon"}
                               </span>
                             </div>
@@ -290,8 +290,8 @@ export default function SensorManagement() {
                                   Dashcam
                                 </Badge>
                               )}
-                              {!equipment.sensors.levelSensor?.installed && 
-                               !equipment.sensors.temperatureSensor?.installed && 
+                              {!equipment.sensors.levelSensor?.installed &&
+                               !equipment.sensors.temperatureSensor?.installed &&
                                !equipment.sensors.aiDashcam?.installed && (
                                 <span className="text-xs text-muted-foreground">None</span>
                               )}
@@ -300,19 +300,19 @@ export default function SensorManagement() {
                         </TableCell>
                         <TableCell>
                           {equipment.powered && equipment.sensors.telematics?.installed ? (
-                            <Badge 
-                              variant="outline" 
-                              className={equipment.sensors.telematics.status === "active" 
-                                ? "bg-green-50 text-green-700 border-green-200" 
+                            <Badge
+                              variant="outline"
+                              className={equipment.sensors.telematics.status === "active"
+                                ? "bg-green-50 text-green-700 border-green-200"
                                 : "bg-red-50 text-red-700 border-red-200"}
                             >
                               {equipment.sensors.telematics.status === "active" ? "Active" : "Inactive"}
                             </Badge>
                           ) : !equipment.powered && equipment.sensors.bleBeacon?.installed ? (
-                            <Badge 
-                              variant="outline" 
-                              className={equipment.sensors.bleBeacon.status === "active" 
-                                ? "bg-green-50 text-green-700 border-green-200" 
+                            <Badge
+                              variant="outline"
+                              className={equipment.sensors.bleBeacon.status === "active"
+                                ? "bg-green-50 text-green-700 border-green-200"
                                 : "bg-red-50 text-red-700 border-red-200"}
                             >
                               {equipment.sensors.bleBeacon.status === "active" ? "Active" : "Inactive"}
@@ -369,7 +369,7 @@ export default function SensorManagement() {
               {selectedEquipment?.id} - {selectedEquipment?.type}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedEquipment?.powered ? (
             <div className="space-y-4 py-4">
               <div className="space-y-4 border rounded-md p-4">
@@ -383,7 +383,7 @@ export default function SensorManagement() {
                   </div>
                   <Switch checked={selectedEquipment?.sensors.telematics?.installed || false} />
                 </div>
-                
+
                 {selectedEquipment?.sensors.telematics?.installed && (
                   <div className="space-y-4 pl-7">
                     <div className="space-y-2">
@@ -401,22 +401,22 @@ export default function SensorManagement() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="serialNumber">Serial Number</Label>
-                      <Input 
-                        id="serialNumber" 
-                        defaultValue={selectedEquipment?.sensors.telematics?.serialNumber} 
-                        placeholder="Enter device serial number" 
+                      <Input
+                        id="serialNumber"
+                        defaultValue={selectedEquipment?.sensors.telematics?.serialNumber}
+                        placeholder="Enter device serial number"
                       />
                     </div>
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Additional Sensors</h3>
-                
+
                 <div className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center gap-2">
                     <Gauge className="h-5 w-5 text-amber-500" />
@@ -427,7 +427,7 @@ export default function SensorManagement() {
                   </div>
                   <Switch checked={selectedEquipment?.sensors.levelSensor?.installed || false} />
                 </div>
-                
+
                 <div className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center gap-2">
                     <Thermometer className="h-5 w-5 text-red-500" />
@@ -438,7 +438,7 @@ export default function SensorManagement() {
                   </div>
                   <Switch checked={selectedEquipment?.sensors.temperatureSensor?.installed || false} />
                 </div>
-                
+
                 <div className="flex items-center justify-between border rounded-md p-3">
                   <div className="flex items-center gap-2">
                     <Camera className="h-5 w-5 text-purple-500" />
@@ -449,7 +449,7 @@ export default function SensorManagement() {
                   </div>
                   <Switch checked={selectedEquipment?.sensors.aiDashcam?.installed || false} />
                 </div>
-                
+
                 {selectedEquipment?.sensors.aiDashcam?.installed && (
                   <div className="pl-7 space-y-3">
                     <div className="flex items-center justify-between border rounded-md p-3">
@@ -477,7 +477,7 @@ export default function SensorManagement() {
                   </div>
                   <Switch checked={selectedEquipment?.sensors.bleBeacon?.installed || false} />
                 </div>
-                
+
                 {selectedEquipment?.sensors.bleBeacon?.installed && (
                   <div className="space-y-4 pl-7">
                     <div className="space-y-2">
@@ -495,19 +495,37 @@ export default function SensorManagement() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="bleSerialNumber">Beacon ID</Label>
-                      <Input 
-                        id="bleSerialNumber" 
-                        defaultValue={selectedEquipment?.sensors.bleBeacon?.serialNumber} 
-                        placeholder="Enter beacon ID or serial number" 
+                      <Input
+                        id="bleSerialNumber"
+                        defaultValue={selectedEquipment?.sensors.bleBeacon?.serialNumber}
+                        placeholder="Enter beacon ID or serial number"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="batteryLevel">Battery Level</Label>
                       <div className="flex items-center gap-2">
                         <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div className="\
-\
+                          <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '85%' }}></div>
+                        </div>
+                        <span className="text-sm">85%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </DesktopLayout>
+  )
+}
