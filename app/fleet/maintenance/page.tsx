@@ -218,6 +218,7 @@ export default function MaintenanceSchedule() {
                   setCurrentView(value);
                   setCurrentPage(1);
                   setStatusFilter(value);
+                  // Update the dropdown status filter to match the tab
                 }}>
                   <TabsList>
                     {isLoading ? (
@@ -364,6 +365,26 @@ export default function MaintenanceSchedule() {
 
                   {advancedFiltersEnabled && (
                     <div className="flex items-center gap-2">
+                      <Select
+                        value={statusFilter}
+                        onValueChange={(value) => {
+                          setStatusFilter(value);
+                          // Update the tab to match the dropdown status filter
+                          setCurrentView(value);
+                        }}
+                        disabled={isLoading}>
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          <SelectItem value="started">Started</SelectItem>
+                          <SelectItem value="overdue">Overdue</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Select value={typeFilter} onValueChange={setTypeFilter} disabled={isLoading}>
                         <SelectTrigger className="w-[150px]">
                           <SelectValue placeholder="Type" />
@@ -450,7 +471,9 @@ export default function MaintenanceSchedule() {
                             <TableCell className="font-medium">
                              {task.equipmentType}
                             </TableCell>
-                            <TableCell>{task.type}</TableCell>
+                            <TableCell>
+                            {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
+                           </TableCell>
                             <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
                             <TableCell>
                               <Badge
