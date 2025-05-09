@@ -28,6 +28,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -121,6 +122,46 @@ export default function OperatorAssignments() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
+  // State for edit form
+  const [editFormData, setEditFormData] = useState<{
+    operatorId: string;
+    equipmentId: string;
+    taskType: string;
+    priority: string;
+    status: string;
+    startDate: string;
+    startTime: string;
+    endDate: string;
+    endTime: string;
+  }>({
+    operatorId: '',
+    equipmentId: '',
+    taskType: '',
+    priority: '',
+    status: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+  })
+
+  // Sample operators and equipment for dropdowns
+  const [operators, setOperators] = useState<{id: string, name: string}[]>([
+    { id: "OP001", name: "John Smith" },
+    { id: "OP002", name: "Jane Doe" },
+    { id: "OP003", name: "Michael Johnson" },
+    { id: "OP004", name: "Sarah Williams" },
+    { id: "OP005", name: "Robert Brown" },
+  ])
+
+  const [equipmentList, setEquipmentList] = useState<{id: string, type: string, model: string}[]>([
+    { id: "EQ001", type: "Baggage Tractor", model: "TLD JST-25" },
+    { id: "EQ002", type: "Belt Loader", model: "TLD RBW-32" },
+    { id: "EQ003", type: "Pushback Tractor", model: "TUG GT-110" },
+    { id: "EQ004", type: "Container Loader", model: "JBT B1200" },
+    { id: "EQ005", type: "Ground Power Unit", model: "Hobart 140CU28" },
+  ])
 
   // Feature flags
   const editAssignmentEnabled = true
@@ -877,6 +918,18 @@ export default function OperatorAssignments() {
                                     <DropdownMenuItem
                                       onClick={() => {
                                         setSelectedAssignment(assignment)
+                                        // Initialize edit form data
+                                        setEditFormData({
+                                          operatorId: assignment.operatorId,
+                                          equipmentId: assignment.equipmentId,
+                                          taskType: assignment.taskType,
+                                          priority: assignment.priority,
+                                          status: assignment.status,
+                                          startDate: assignment.startTime ? assignment.startTime.split(" ")[0] : "",
+                                          startTime: assignment.startTime ? assignment.startTime.split(" ")[1] : "",
+                                          endDate: assignment.endTime ? assignment.endTime.split(" ")[0] : "",
+                                          endTime: assignment.endTime ? assignment.endTime.split(" ")[1] : "",
+                                        })
                                         setIsEditModalOpen(true)
                                       }}
                                     >
@@ -1105,22 +1158,216 @@ export default function OperatorAssignments() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setIsEditModalOpen(false)}
         >
-          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full border border-border" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full border border-border overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4 text-foreground">Edit Assignment</h2>
-            <p className="mb-4 text-foreground">This would be an edit form for assignment {selectedAssignment.id}</p>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  alert("Changes would be saved here")
-                  setIsEditModalOpen(false)
-                }}
-              >
-                Save Changes
-              </Button>
-            </div>
+
+            <form className="space-y-4">
+              {/* Assignment ID - Read Only */}
+              <div className="space-y-2">
+                <Label htmlFor="assignment-id">Assignment ID</Label>
+                <Input
+                  id="assignment-id"
+                  value={selectedAssignment.id}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Operator Information */}
+              <div className="space-y-2">
+                <Label htmlFor="operator">Operator</Label>
+                <Select
+                  defaultValue={selectedAssignment.operatorId}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, operatorId: value }))}
+                >
+                  <SelectTrigger id="operator" className="w-full">
+                    <SelectValue placeholder="Select operator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {operators.map(operator => (
+                      <SelectItem key={operator.id} value={operator.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback>
+                              {operator.name
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{operator.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Equipment Information */}
+              <div className="space-y-2">
+                <Label htmlFor="equipment">Equipment</Label>
+                <Select
+                  defaultValue={selectedAssignment.equipmentId}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, equipmentId: value }))}
+                >
+                  <SelectTrigger id="equipment" className="w-full">
+                    <SelectValue placeholder="Select equipment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipmentList.map(equipment => (
+                      <SelectItem key={equipment.id} value={equipment.id}>
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <span>{equipment.type}</span>
+                            <span className="text-xs text-muted-foreground ml-2">({equipment.model})</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Task Type */}
+              <div className="space-y-2">
+                <Label htmlFor="task-type">Task Type</Label>
+                <Select
+                  defaultValue={selectedAssignment.taskType}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, taskType: value }))}
+                >
+                  <SelectTrigger id="task-type">
+                    <SelectValue placeholder="Select task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Equipment Use">Equipment Use</SelectItem>
+                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="Training">Training</SelectItem>
+                    <SelectItem value="Special Operation">Special Operation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Priority */}
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  defaultValue={selectedAssignment.priority}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, priority: value }))}
+                >
+                  <SelectTrigger id="priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Start Time */}
+              <div className="space-y-2">
+                <Label htmlFor="start-time">Start Date & Time</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      defaultValue={selectedAssignment.startTime ? selectedAssignment.startTime.split(" ")[0] : ""}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      id="start-time-input"
+                      type="time"
+                      defaultValue={selectedAssignment.startTime ? selectedAssignment.startTime.split(" ")[1] : ""}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* End Time */}
+              <div className="space-y-2">
+                <Label htmlFor="end-time">End Date & Time</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      defaultValue={selectedAssignment.endTime ? selectedAssignment.endTime.split(" ")[0] : ""}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      id="end-time-input"
+                      type="time"
+                      defaultValue={selectedAssignment.endTime ? selectedAssignment.endTime.split(" ")[1] : ""}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  defaultValue={selectedAssignment.status}
+                  onValueChange={(value) => setEditFormData(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex justify-end gap-2">
+                <Button variant="outline" type="button" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (selectedAssignment) {
+                      // Validate form data
+                      if (!editFormData.operatorId || !editFormData.equipmentId ||
+                          !editFormData.taskType || !editFormData.priority || !editFormData.status ||
+                          !editFormData.startDate || !editFormData.startTime ||
+                          !editFormData.endDate || !editFormData.endTime) {
+                        alert("Please fill in all required fields")
+                        return
+                      }
+
+                      // Here you would normally call the API to update the assignment
+                      console.log("Updating assignment with data:", {
+                        id: selectedAssignment.id,
+                        ...editFormData
+                      })
+
+                      // For demo purposes, show success message
+                      alert("Assignment updated successfully")
+                      setIsEditModalOpen(false)
+
+                      // In a real implementation, you would refresh the assignments list
+                      // fetchList().catch(err => console.error('Error fetching assignments:', err))
+                    }
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
