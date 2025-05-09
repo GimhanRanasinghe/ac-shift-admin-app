@@ -620,7 +620,7 @@ export default function OperatorAssignments() {
                           </>
                         ) : (
                           <>
-                            <TabsTrigger value="all">All Assignments ({counts?.total || 0})</TabsTrigger>
+                            <TabsTrigger value="all">All Assignments ({counts?.all || 0})</TabsTrigger>
                             <TabsTrigger value="scheduled">Scheduled ({counts?.scheduled || 0})</TabsTrigger>
                             <TabsTrigger value="active">Active ({counts?.active || 0})</TabsTrigger>
                             <TabsTrigger value="completed">Completed ({counts?.completed || 0})</TabsTrigger>

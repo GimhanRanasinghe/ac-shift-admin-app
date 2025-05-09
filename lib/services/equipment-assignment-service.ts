@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/auth-headers';
 
 // Define interfaces for the API responses
 export interface AssignmentCounts {
-  total: number;
+  all: number;
   scheduled: number;
   active: number;
   completed: number;
@@ -95,7 +95,7 @@ export interface UpdateAssignmentPayload {
 
 // API endpoints
 const ENDPOINTS = {
-  COUNTS: '/admin-portal/equipment-assignments/operator-assignments/counts',
+  COUNTS: '/admin-portal/equipment-assignments/counts',
   LIST: '/admin-portal/equipment-assignments/operator-assignments/list',
   ASSIGNMENTS: '/admin-portal/equipment-assignments',
 };
