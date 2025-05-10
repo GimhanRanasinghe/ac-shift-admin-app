@@ -5,6 +5,8 @@ import { withAuth } from '@/lib/auth-headers';
 export interface MaintenanceCounts {
   all: number;
   upcoming: number;
+  unassigned: number;
+  started: number;
   overdue: number;
   completed: number;
 }

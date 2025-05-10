@@ -73,7 +73,7 @@ export default function MaintenanceSchedule() {
   // API calls
   const { data: counts, loading: countsLoading, error: countsError, execute: fetchCounts } = useApi<MaintenanceCounts>(
     () => maintenanceService.getCounts(),
-    { all: 0, upcoming: 0, overdue: 0, completed: 0 },
+    { all: 0, upcoming: 0, unassigned: 0, started: 0, overdue: 0, completed: 0 },
     false
   )
 
@@ -230,6 +230,12 @@ export default function MaintenanceSchedule() {
                         <TabsTrigger value="upcoming" disabled>
                           Upcoming (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
                         </TabsTrigger>
+                        <TabsTrigger value="unassigned" disabled>
+                          Unassigned (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
+                        <TabsTrigger value="started" disabled>
+                          Started (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
+                        </TabsTrigger>
                         <TabsTrigger value="overdue" disabled>
                           Overdue (<div className="inline-block h-3 w-4 animate-pulse rounded bg-gray-200"></div>)
                         </TabsTrigger>
@@ -241,6 +247,8 @@ export default function MaintenanceSchedule() {
                       <>
                         <TabsTrigger value="all">All Tasks ({counts?.all || 0})</TabsTrigger>
                         <TabsTrigger value="upcoming">Upcoming ({counts?.upcoming || 0})</TabsTrigger>
+                        <TabsTrigger value="unassigned">Unassigned ({counts?.unassigned || 0})</TabsTrigger>
+                        <TabsTrigger value="started">Started ({counts?.started || 0})</TabsTrigger>
                         <TabsTrigger value="overdue">Overdue ({counts?.overdue || 0})</TabsTrigger>
                         <TabsTrigger value="completed">Completed ({counts?.completed || 0})</TabsTrigger>
                       </>
@@ -260,9 +268,13 @@ export default function MaintenanceSchedule() {
                         className={
                           statusFilter === "upcoming"
                             ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : statusFilter === "overdue"
-                              ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-green-50 text-green-700 border-green-200"
+                            : statusFilter === "unassigned"
+                              ? "bg-gray-50 text-gray-700 border-gray-200"
+                              : statusFilter === "started"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : statusFilter === "overdue"
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : "bg-green-50 text-green-700 border-green-200"
                         }
                       >
                         Status: {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
@@ -481,9 +493,13 @@ export default function MaintenanceSchedule() {
                                 className={
                                   task.status === "upcoming"
                                     ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : task.status === "overdue"
-                                      ? "bg-red-50 text-red-700 border-red-200"
-                                      : "bg-green-50 text-green-700 border-green-200"
+                                    : task.status === "unassigned"
+                                      ? "bg-gray-50 text-gray-700 border-gray-200"
+                                      : task.status === "started"
+                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                        : task.status === "overdue"
+                                          ? "bg-red-50 text-red-700 border-red-200"
+                                          : "bg-green-50 text-green-700 border-green-200"
                                 }
                               >
                                 {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
